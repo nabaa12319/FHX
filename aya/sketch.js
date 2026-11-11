@@ -537,129 +537,129 @@ function drawCollectibles(P, dt){
   }
 }
 
-// ---------- Aya ----------
+// ---------- Aya (retro flat cartoon style: bold outlines, big round eyes, long thin limbs) ----------
 function drawAya(P){
-  const u = S.H * 0.0108;
-  const ol = P.shade('#3a2c3c');
-  const F = (hex) => { const c = P.shade(hex); fill(c[0], c[1], c[2]); };
-  const O = (w) => { stroke(ol[0], ol[1], ol[2]); strokeWeight(w * u); };
+  const u = S.H * 0.0095;
+  const ink = P.shade('#17202f');
+  const OW = 0.3 * u;                                  // outline weight
   const U = (pts) => pts.map(c => [c[0]].concat(c.slice(1).map(v => v * u)));
-  const wind = S.t * 7;
-  const sw = Math.sin(wind) * 0.5;
-  const HAIR = '#ddb062', HAIR_D = '#bf8f45', HAIR_L = '#f6dc98';
-  const skin = P.shade('#f6d1b1');
+  const shape = (pts, hex) => nativeShape(U(pts), P.shade(hex), ink, OW);
+  const C = (hex) => P.shade(hex);
+  // a limb = dark stroke underneath + coloured stroke on top (gives the outline)
+  const limb = (pts, hex, w) => {
+    const p = U(pts.map(q => ['L', q[0], q[1]])); p[0][0] = 'M';
+    nativeShape(p, null, ink, (w + 0.6) * u);
+    nativeShape(p, null, C(hex), w * u);
+  };
+  const dot = (x, y, r, hex, outline) => {
+    const ctx = drawingContext; ctx.beginPath(); ctx.arc(x * u, y * u, r * u, 0, Math.PI * 2);
+    ctx.fillStyle = css(C(hex)); ctx.fill();
+    if(outline){ ctx.strokeStyle = css(ink); ctx.lineWidth = OW; ctx.stroke(); }
+  };
+  const wind = S.t * 7, sw = Math.sin(wind) * 0.5;
+  const SKIN = '#f3a586', HAIR = '#f2c75c', HAIR_D = '#d9a640', TOP = '#2f56c8';
+  const armY = Math.sin(S.t * 2.2) * 0.4;
+  drawingContext.lineJoin = 'round';
   push();
   translate(S.ax, S.ay - u * 0.6);
   rotate(S.rot);
   if(S.wipe > 0){ translate(0, u * 3); }
 
-  // surfboard with a little flower
-  O(0.22); F('#ffd25e');
-  ellipse(0, 0, 11.5 * u, 1.7 * u);
-  noStroke(); F('#ff8a6b'); rect(-4.4 * u, -0.28 * u, 8.8 * u, 0.56 * u, 0.28 * u);
-  F('#ffffff'); rect(-4.4 * u, -0.05 * u, 8.8 * u, 0.12 * u);
-  O(0.22); noFill(); ellipse(0, 0, 11.5 * u, 1.7 * u);
-  noStroke(); F('#ff6fa6');
-  for(let k = 0; k < 5; k++){ const a = k * Math.PI * 2 / 5; ellipse(4.3 * u + Math.cos(a) * 0.32 * u, Math.sin(a) * 0.32 * u, 0.45 * u, 0.45 * u); }
-  F('#ffe27a'); circle(4.3 * u, 0, 0.3 * u);
-  O(0.15); F('#3a2c3c'); triangle(-4.8 * u, 0.65 * u, -3.8 * u, 0.65 * u, -4.6 * u, 1.9 * u); // fin
+  // surfboard
+  shape([['M', -6, 0], ['C', -6, -1, 5, -1.1, 6.4, 0], ['C', 5, 1.1, -6, 1, -6, 0]], '#ffd84d');
+  shape([['M', -4.6, -0.25], ['L', 4.8, -0.3], ['L', 4.8, 0.25], ['L', -4.6, 0.25]], '#ff6f61');
+  shape([['M', -4.9, 0.6], ['L', -3.9, 0.6], ['L', -4.7, 1.9]], '#17202f');
 
-  // long blonde hair behind, strands flying back in the wind
+  // long curly blonde hair behind, blowing back in the wind
   for(let k = 2; k >= 0; k--){
-    const y0 = -14 + k * 1.9, s1 = Math.sin(wind + k * 1.3) * 0.6;
-    nativeShape(U([
-      ['M', -3.4, y0],
-      ['C', -5.4, y0 - 0.7 + s1, -6.9, y0 + 0.1 + s1, -8.2 + s1, y0 + 1.1],
-      ['C', -6.7, y0 + 1.6, -5.1, y0 + 1.6, -3.4, y0 + 1.5]
-    ]), P.shade(k % 2 ? HAIR_D : HAIR));
+    const y0 = -18 + k * 2.1, s1 = Math.sin(wind + k * 1.3) * 0.7;
+    shape([['M', -2.6, y0], ['C', -4.8, y0 - 0.9 + s1, -6.6, y0 + 0.2 + s1, -8 + s1, y0 + 1.3],
+           ['C', -7, y0 + 1.5, -6.6, y0 + 2.2, -6 + s1 * 0.5, y0 + 2.4], ['C', -4.6, y0 + 2.2, -3.6, y0 + 2, -2.6, y0 + 1.8]], k % 2 ? HAIR_D : HAIR);
   }
-  nativeShape(U([
-    ['M', -2.9, -15.2],
-    ['C', -5.3, -14.4, -5.7, -11.2, -5.4 + sw, -8.4],
-    ['C', -5.2, -7.1, -4, -6.7, -3.2, -7.3],
-    ['C', -2.2, -6.7, -0.6, -7.5, 0.6, -7.3],
-    ['C', 1.8, -7.1, 3.1, -7.6, 3.5, -8.5],
-    ['C', 4, -11, 3.9, -14.8, 2.7, -15.8],
-    ['C', 1.2, -16.8, -1.7, -16.6, -2.9, -15.2]
-  ]), P.shade(HAIR));
-  // curls
-  noFill(); const hl = P.shade(HAIR_L), hd = P.shade(HAIR_D);
-  strokeWeight(0.32 * u);
-  for(let k = 0; k < 5; k++){
-    stroke(...(k % 2 ? hd : hl));
-    arc((-4.3 - k * 0.2 + Math.sin(wind + k) * 0.3) * u, (-13.6 + k * 1.35) * u, 1.3 * u, 1.1 * u, 0.2, Math.PI * 1.3);
-  }
-  stroke(...hl);
-  arc(2.9 * u, -11.2 * u, 1.1 * u, 1.3 * u, -1.2, 1.6);
-  arc(2.7 * u, -9.2 * u, 1.1 * u, 1.3 * u, -1.2, 1.6);
+  shape([
+    ['M', -2.4, -19.4],
+    ['C', -4.6, -19, -5, -16.4, -4.6 + sw * 0.4, -14.2],
+    ['C', -5.4, -13, -4.8, -11.2, -3.4, -11.4],
+    ['C', -2.8, -10.6, -1.6, -10.9, -1.4, -11.6],
+    ['L', 1.6, -11.6],
+    ['C', 2, -10.8, 3.4, -10.9, 3.6, -12],
+    ['C', 4.6, -12.6, 4.4, -14.6, 3.6, -15.2],
+    ['C', 4.2, -17.4, 3.4, -19.8, 1, -20.2],
+    ['C', -0.4, -20.5, -1.6, -20.2, -2.4, -19.4]
+  ], HAIR);
 
-  // legs (wetsuit), knees bent
-  noFill(); const leg = P.shade('#26305e');
-  stroke(leg[0], leg[1], leg[2]); strokeWeight(1.15 * u); strokeJoin(ROUND);
-  beginShape(); vertex(-2.4 * u, -0.7 * u); vertex(-2.6 * u, -2.6 * u); vertex(-0.6 * u, -4.5 * u); endShape();
-  beginShape(); vertex(2.2 * u, -0.7 * u); vertex(2.5 * u, -2.7 * u); vertex(0.6 * u, -4.5 * u); endShape();
-  noStroke(); fill(skin[0], skin[1], skin[2]); ellipse(-2.4 * u, -0.6 * u, 1.5 * u, 0.6 * u); ellipse(2.3 * u, -0.6 * u, 1.5 * u, 0.6 * u);
+  // legs: thin, bare, white socks with a blue stripe, blue sneakers
+  limb([[-2.4, -1.6], [-2.8, -4.4], [-0.7, -6.6]], SKIN, 0.95);
+  limb([[2.2, -1.6], [2.7, -4.5], [0.7, -6.6]], SKIN, 0.95);
+  limb([[-2.4, -0.9], [-2.5, -2.7]], '#ffffff', 1.2);
+  limb([[2.2, -0.9], [2.3, -2.7]], '#ffffff', 1.2);
+  nativeShape(U([['M', -2.95, -2.3], ['L', -1.9, -2.3]]), null, C('#2f56c8'), 0.3 * u);
+  nativeShape(U([['M', 1.75, -2.3], ['L', 2.8, -2.3]]), null, C('#2f56c8'), 0.3 * u);
+  shape([['M', -3.4, -0.5], ['C', -3.4, -1.3, -1.6, -1.6, -1.2, -0.9], ['C', -1, -0.5, -1.2, -0.3, -1.6, -0.3], ['L', -3.2, -0.3]], '#2f56c8');
+  shape([['M', 1.3, -0.5], ['C', 1.3, -1.3, 3.1, -1.6, 3.5, -0.9], ['C', 3.7, -0.5, 3.5, -0.3, 3.1, -0.3], ['L', 1.5, -0.3]], '#2f56c8');
+  nativeShape(U([['M', -2.6, -0.9], ['L', -2.2, -1.25], ['M', -2.1, -0.85], ['L', -1.7, -1.2]]), null, C('#ffffff'), 0.18 * u);
+  nativeShape(U([['M', 2.1, -0.9], ['L', 2.5, -1.25], ['M', 2.6, -0.85], ['L', 3, -1.2]]), null, C('#ffffff'), 0.18 * u);
 
-  // arms out for balance (short sleeves)
-  const armY = Math.sin(S.t * 2.2) * 0.4 * u;
-  stroke(skin[0], skin[1], skin[2]); strokeWeight(0.8 * u);
-  line(-1.6 * u, -8.3 * u, -3.4 * u, -7.5 * u + armY); line(-3.4 * u, -7.5 * u + armY, -5 * u, -6.8 * u + armY);
-  line(1.6 * u, -8.3 * u, 3.6 * u, -9.3 * u - armY); line(3.6 * u, -9.3 * u - armY, 5.2 * u, -9.9 * u - armY);
-  noStroke(); fill(skin[0], skin[1], skin[2]); circle(-5.1 * u, -6.75 * u + armY, 0.85 * u); circle(5.3 * u, -9.95 * u - armY, 0.85 * u);
+  // white pleated shorts with a light check
+  shape([['M', -1.7, -8], ['L', 1.7, -8], ['L', 2.3, -6], ['L', 0.15, -6.2], ['L', -0.15, -6.2], ['L', -2.3, -6]], '#ffffff');
+  nativeShape(U([['M', -1, -8], ['L', -1.3, -6.1], ['M', 1, -8], ['L', 1.3, -6.1], ['M', -2, -7], ['L', 2, -7]]), null, C('#c9d4ea'), 0.14 * u);
 
-  // shirt: navy, a little tapered, with sleeves and a collar
-  O(0.2); F('#34408f');
-  nativeShape(U([['M', -1.9, -9.1], ['L', 1.9, -9.1], ['C', 2.1, -7.4, 1.6, -5.6, 1.4, -4.3], ['L', -1.4, -4.3], ['C', -1.6, -5.6, -2.1, -7.4, -1.9, -9.1]]), P.shade('#34408f'), ol, 0.2 * u);
-  nativeShape(U([['M', -1.9, -9.1], ['L', -2.9, -8.2], ['L', -2.4, -7.6], ['L', -1.6, -8.1]]), P.shade('#2d3880'), ol, 0.18 * u);
-  nativeShape(U([['M', 1.9, -9.1], ['L', 2.9, -8.6], ['L', 2.6, -7.9], ['L', 1.7, -8.2]]), P.shade('#2d3880'), ol, 0.18 * u);
-  noStroke(); fill(skin[0], skin[1], skin[2]); rect(-0.55 * u, -10.2 * u, 1.1 * u, 1.3 * u);
-  triangle(-0.7 * u, -9.1 * u, 0.7 * u, -9.1 * u, 0, -7.9 * u);
-  O(0.15); F('#283272'); triangle(-1.2 * u, -9.2 * u, -0.15 * u, -9.2 * u, -0.5 * u, -8.1 * u); triangle(1.2 * u, -9.2 * u, 0.15 * u, -9.2 * u, 0.5 * u, -8.1 * u);
-  // a tiny shell necklace
-  noStroke(); F('#ffffff'); circle(0, -8.25 * u, 0.32 * u);
+  // arms: thin, long, with little mitten hands
+  limb([[-1.8, -10.6], [-3.7, -9.2 + armY], [-5.3, -8.5 + armY]], SKIN, 0.8);
+  limb([[1.8, -10.6], [3.9, -11.6 - armY], [5.5, -12.3 - armY]], SKIN, 0.8);
+  dot(-5.5, -8.4 + armY, 0.55, SKIN, true);
+  dot(5.7, -12.4 - armY, 0.55, SKIN, true);
 
-  // head: soft, slightly bigger for a cuter look
-  O(0.2); fill(skin[0], skin[1], skin[2]);
-  rect(-2.4 * u, -15.3 * u, 4.8 * u, 5.5 * u, 1.9 * u, 1.9 * u, 2.3 * u, 2.3 * u);
-  // fringe parted in the middle + side locks framing the face
-  noStroke();
-  nativeShape(U([
-    ['M', -2.6, -12.6],
-    ['C', -2.9, -15.6, -0.9, -16.4, 0, -15.6],
-    ['C', 0.9, -16.4, 2.9, -15.6, 2.7, -12.6],
-    ['C', 2.2, -14.2, 1, -14.8, 0, -14.4],
-    ['C', -1, -14.8, -2.2, -14.2, -2.6, -12.6]
-  ]), P.shade(HAIR));
-  nativeShape(U([['M', -2.3, -14], ['C', -3.3, -12.4, -3.2, -10.2, -2.6 + sw * 0.3, -8.4], ['C', -2.2, -9.4, -2.1, -11.6, -1.9, -13.2]]), P.shade(HAIR_D));
-  nativeShape(U([['M', 2.4, -14], ['C', 3.3, -12.4, 3.2, -10.4, 2.7, -8.8], ['C', 2.3, -9.8, 2.2, -11.8, 2, -13.2]]), P.shade(HAIR));
-  stroke(...hl); strokeWeight(0.22 * u); noFill();
-  arc(-0.9 * u, -14.6 * u, 1.6 * u, 0.8 * u, Math.PI * 1.05, Math.PI * 1.75);
-  arc(1 * u, -14.6 * u, 1.6 * u, 0.8 * u, Math.PI * 1.25, Math.PI * 1.95);
+  // blue cropped top: puffy sleeves, white band, little collar
+  shape([['M', -2.7, -10.9], ['C', -3.6, -10.4, -3.4, -9.3, -2.4, -9.2], ['L', -1.8, -10.8]], TOP);
+  shape([['M', 2.7, -10.9], ['C', 3.6, -10.4, 3.4, -9.3, 2.4, -9.2], ['L', 1.8, -10.8]], TOP);
+  shape([['M', -2.1, -11.4], ['L', 2.1, -11.4], ['C', 2.4, -10.2, 2.1, -8.9, 1.9, -8.1], ['L', -1.9, -8.1], ['C', -2.1, -8.9, -2.4, -10.2, -2.1, -11.4]], TOP);
+  shape([['M', -1.95, -8.75], ['L', 1.95, -8.75], ['L', 1.9, -8.1], ['L', -1.9, -8.1]], '#ffffff');
+  nativeShape(U([['M', -1.9, -8.45], ['L', 1.9, -8.45]]), null, C(TOP), 0.16 * u);
+  // neck + collar
+  shape([['M', -0.45, -12.8], ['L', 0.45, -12.8], ['L', 0.45, -11.3], ['L', -0.45, -11.3]], SKIN);
+  shape([['M', -0.85, -11.9], ['L', 0.85, -11.9], ['L', 0.95, -11.3], ['L', -0.95, -11.3]], TOP);
 
-  // rosy cheeks
-  noStroke(); const ck = P.shade('#f4949c'); fill(ck[0], ck[1], ck[2], 120);
-  ellipse(-1.55 * u, -11.6 * u, 1 * u, 0.6 * u); ellipse(1.6 * u, -11.6 * u, 1 * u, 0.6 * u);
-  // eyes with a sparkle + lashes
-  F('#2e2a30'); ellipse(-1.1 * u, -12.85 * u, 0.55 * u, 0.68 * u); ellipse(1.15 * u, -12.85 * u, 0.55 * u, 0.68 * u);
-  fill(255, 255, 255); circle(-1 * u, -12.98 * u, 0.2 * u); circle(1.25 * u, -12.98 * u, 0.2 * u);
-  const lash = P.shade('#2e2a30'); stroke(lash[0], lash[1], lash[2]); strokeWeight(0.14 * u);
-  line(-1.45 * u, -13.1 * u, -1.75 * u, -13.35 * u); line(1.5 * u, -13.1 * u, 1.8 * u, -13.35 * u);
-  // glasses: blue cat-eye top rim, fine gold below
-  const gold = P.shade('#d2b067'), blueRim = P.shade('#3d8fe0');
-  noFill(); stroke(gold[0], gold[1], gold[2]); strokeWeight(0.16 * u);
-  ellipse(-1.12 * u, -12.85 * u, 1.85 * u, 1.3 * u); ellipse(1.17 * u, -12.85 * u, 1.85 * u, 1.3 * u);
-  line(-0.2 * u, -13 * u, 0.25 * u, -13 * u);
-  stroke(blueRim[0], blueRim[1], blueRim[2]); strokeWeight(0.36 * u);
-  line(-2.05 * u, -13.1 * u, -0.25 * u, -13.45 * u); line(0.3 * u, -13.45 * u, 2.1 * u, -13.1 * u);
-  line(-2.05 * u, -13.1 * u, -2.3 * u, -13.55 * u); line(2.1 * u, -13.1 * u, 2.35 * u, -13.55 * u);
-  // nose, smile, freckles
-  const nose = P.shade('#e0a283'); stroke(nose[0], nose[1], nose[2]); strokeWeight(0.18 * u); noFill();
-  arc(0.1 * u, -11.85 * u, 0.6 * u, 0.4 * u, 0.2, Math.PI - 0.2);
-  noStroke(); F('#d8667a');
-  arc(0.05 * u, -11.05 * u, 1.5 * u, 0.95 * u, 0, Math.PI, CHORD);
-  F('#ffffff'); rect(-0.45 * u, -11.05 * u, 0.95 * u, 0.18 * u, 0.08 * u);
-  F('#d99b78');
-  circle(-1.5 * u, -12 * u, 0.15 * u); circle(-1.15 * u, -11.85 * u, 0.13 * u); circle(1.5 * u, -12 * u, 0.15 * u); circle(1.15 * u, -11.85 * u, 0.13 * u);
+  // ear, then head (wide round top, small pointed chin)
+  dot(2.55, -15.1, 0.55, SKIN, true);
+  shape([['M', -2.6, -16], ['C', -2.8, -19.2, 2.8, -19.2, 2.6, -16], ['C', 2.5, -14, 1.4, -12.6, 0, -12.5], ['C', -1.4, -12.6, -2.5, -14, -2.6, -16]], SKIN);
+
+  // choppy fringe + side curls framing the face
+  shape([
+    ['M', -2.9, -15.4],
+    ['C', -3.3, -19.4, 3.3, -19.6, 2.9, -15.8],
+    ['L', 2.3, -16.5], ['L', 1.9, -15.9], ['L', 1.3, -16.8], ['L', 0.7, -16.1], ['L', 0.1, -17], ['L', -0.5, -16.2],
+    ['L', -1.1, -17], ['L', -1.6, -16.2], ['L', -2.2, -16.9], ['L', -2.4, -15.6]
+  ], HAIR);
+  shape([['M', -2.6, -16.4], ['C', -3.6, -15.2, -3.4, -13.6, -2.7 + sw * 0.2, -12.6], ['C', -2.4, -13.4, -2.3, -14.6, -2.2, -15.6]], HAIR_D);
+  // shiny highlight strokes in the hair (like the reference)
+  nativeShape(U([['M', -1.6, -18.4], ['C', -1, -18.8, 0, -18.9, 0.6, -18.7]]), null, C('#ffffff'), 0.22 * u);
+  nativeShape(U([['M', -4.2, -15.6], ['C', -4.4, -14.8, -4.2, -14, -3.8, -13.4]]), null, C('#ffffff'), 0.2 * u);
+  nativeShape(U([['M', 3.3, -17.6], ['C', 3.6, -17, 3.7, -16.3, 3.5, -15.7]]), null, C('#ffffff'), 0.2 * u);
+  // yellow bow on top
+  shape([['M', 0.6, -19.4], ['C', 1.4, -20.8, 2.6, -20.6, 2.5, -19.6], ['C', 2.4, -18.9, 1.4, -19, 0.6, -19.4]], '#ffd84d');
+  shape([['M', 0.6, -19.4], ['C', -0.2, -20.8, -1.4, -20.6, -1.3, -19.6], ['C', -1.2, -18.9, -0.2, -19, 0.6, -19.4]], '#ffd84d');
+  dot(0.6, -19.4, 0.32, '#f2b632', true);
+
+  // big round eyes looking forward, with lash flicks
+  dot(-1.05, -15.3, 0.85, '#ffffff', true);
+  dot(1.1, -15.3, 0.85, '#ffffff', true);
+  dot(-0.85, -15.25, 0.42, '#17202f');
+  dot(1.3, -15.25, 0.42, '#17202f');
+  dot(-0.72, -15.42, 0.13, '#ffffff');
+  dot(1.43, -15.42, 0.13, '#ffffff');
+  nativeShape(U([['M', -1.85, -15.75], ['L', -2.3, -16.15], ['M', 1.9, -15.75], ['L', 2.35, -16.15]]), null, ink, 0.2 * u);
+  // Aya's glasses: blue cat-eye
+  const blueRim = C('#3d8fe0');
+  nativeShape(U([['M', -2.25, -15.6], ['C', -2.2, -14.4, -0.1, -14.2, -0.05, -15.5], ['C', -0.1, -16.4, -1.9, -16.5, -2.6, -16.3], ['L', -2.25, -15.6]]), null, blueRim, 0.26 * u);
+  nativeShape(U([['M', 2.3, -15.6], ['C', 2.25, -14.4, 0.15, -14.2, 0.1, -15.5], ['C', 0.15, -16.4, 1.95, -16.5, 2.65, -16.3], ['L', 2.3, -15.6]]), null, blueRim, 0.26 * u);
+  nativeShape(U([['M', -0.05, -15.55], ['L', 0.1, -15.55]]), null, blueRim, 0.22 * u);
+  // nose, smile, blush, freckles
+  nativeShape(U([['M', 0.15, -14.4], ['C', 0.45, -14.2, 0.4, -13.85, 0.05, -13.8]]), null, ink, 0.18 * u);
+  nativeShape(U([['M', -0.75, -13.35], ['C', -0.3, -12.85, 0.55, -12.85, 0.95, -13.4]]), null, ink, 0.22 * u);
+  noStroke(); const bl = C('#e8705f'); fill(bl[0], bl[1], bl[2], 110);
+  ellipse(-1.55 * u, -13.9 * u, 0.9 * u, 0.45 * u); ellipse(1.7 * u, -13.9 * u, 0.9 * u, 0.45 * u);
+  dot(-1.4, -14.3, 0.07, '#b9614a'); dot(-1.1, -14.15, 0.06, '#b9614a'); dot(1.4, -14.3, 0.07, '#b9614a'); dot(1.15, -14.15, 0.06, '#b9614a');
   pop();
 }
 
