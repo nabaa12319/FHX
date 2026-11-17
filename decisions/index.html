@@ -1,0 +1,376 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Decision Log · How I used it</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
+<style>
+/* layout: one phone column. Log tab = one big press button + today's list. Sift tab = filters, hourly rhythm, breakdown, list. Burgundy tab bar at the bottom. Palette taken from the user's reference image. */
+:root{
+  --sky:#C4DDFC; --butter:#FDF2B0; --amber:#F2A93B; --wine:#861933;
+  --ink:#2B0A14; --muted:#5A3A46; --line:#9FBFE6;
+  --font:'Almoni AAA','Almoni Neue','Almoni',Heebo,system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--sky);color:var(--ink);font:400 16px/1.55 var(--font);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--wine);outline-offset:2px}
+.wrap{max-width:520px;margin:0 auto;padding-block:14px 110px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.top h1{margin:0;font:700 24px/1.15 var(--font);letter-spacing:-.01em}
+.top .date{font-size:13px;color:var(--muted)}
+.tabs{position:fixed;inset:auto 0 0 0;background:var(--wine);
+  padding:8px max(16px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));z-index:5}
+.tabs div{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tab{border:0;background:transparent;padding:11px;border-radius:10px;font-weight:500;color:var(--butter)}
+.tab[aria-selected="true"]{background:var(--amber);color:var(--ink);font-weight:700}
+
+.stage{display:grid;justify-items:center;padding:28px 0 12px}
+.go{width:min(62vw,240px);aspect-ratio:1;max-width:100%;border-radius:50%;border:0;background:var(--wine);color:var(--butter);
+  box-shadow:0 0 0 14px var(--amber);font:700 30px/1.12 var(--font);letter-spacing:-.01em;display:grid;place-items:center;transition:transform .12s}
+.go:active{transform:scale(.96)}
+.stat{margin:14px 0 0;text-align:center;color:var(--muted);font-size:14px}
+.stat b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+h2{margin:26px 0 8px;font:700 17px/1.3 var(--font)}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+.empty{border:1.5px dashed var(--wine);border-radius:12px;padding:18px;color:var(--muted);font-size:14px;text-align:center}
+
+.row{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;width:100%;text-align:left;background:var(--butter);
+  border:0;border-radius:10px;padding:11px 12px;margin-bottom:6px;min-width:0}
+.row .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+.row .n{min-width:0;overflow-wrap:anywhere;font-size:15px}
+.row .n em{color:var(--muted);font-style:normal}
+.row .m{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.dot{display:inline-block;border-radius:50%;flex:none}
+.dot.big{width:18px;height:18px;background:var(--wine)}
+.dot.daily{width:14px;height:14px;background:var(--amber)}
+.dot.auto{width:10px;height:10px;border:1.5px dashed var(--muted)}
+.dot.none{width:10px;height:10px;border:1.5px solid var(--line)}
+.daylabel{font-size:13px;color:var(--muted);margin:16px 0 6px;font-weight:500}
+.foot{margin-top:22px;font-size:12.5px;color:var(--muted);text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:0;background:var(--butter);border-radius:999px;padding:6px 13px;font-size:13.5px}
+.chip[aria-pressed="true"]{background:var(--wine);color:var(--butter);font-weight:500}
+.cap{font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:500}
+.sum{background:var(--butter);border-radius:12px;padding:14px;margin:14px 0}
+.sum .big{font:700 36px/1.1 var(--font);font-variant-numeric:tabular-nums}
+.sum p{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.rhythm{direction:ltr;display:flex;align-items:flex-end;gap:2px;height:96px;margin-top:6px}
+.rhythm .col{flex:1;height:100%;display:flex;flex-direction:column-reverse;justify-content:flex-start;min-width:0}
+.rhythm .seg{width:100%}
+.rhythm .seg.big{background:var(--wine)} .rhythm .seg.daily{background:var(--amber)} .rhythm .seg.auto{background:var(--butter)} .rhythm .seg.none{background:var(--line)}
+.axis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:110px 1fr 30px;gap:8px;align-items:center;font-size:14px}
+.bar .track{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--wine);border-radius:5px}
+.bar .c{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;font-size:13px}
+.btn{border:0;background:var(--butter);border-radius:10px;padding:11px 18px;font-weight:500}
+.btn.primary{background:var(--wine);color:var(--butter);font-weight:700}
+.btn.danger{color:var(--wine);font-weight:700}
+.msg{font-size:13px;color:var(--muted);margin-top:8px;min-height:1.4em}
+
+.scrim{position:fixed;inset:0;background:rgba(43,10,20,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--sky);width:100%;max-width:520px;max-height:92%;overflow-y:auto;border-radius:20px 20px 0 0;
+  padding:18px max(16px,env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px))}
+.sh-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.sh-top h3{margin:0;font:700 19px/1.3 var(--font)}
+.sh-top .tm{font-variant-numeric:tabular-nums}
+.note{width:100%;border:0;background:var(--butter);color:var(--ink);border-radius:10px;padding:12px;font:inherit;font-size:16px}
+.note::placeholder{color:var(--muted)}
+.wrow{display:flex;justify-content:space-around;align-items:flex-end;gap:8px;margin:6px 0 4px}
+.wc{display:grid;justify-items:center;gap:6px;background:none;border:0;padding:0;font-size:13.5px;color:var(--muted)}
+.wc .c{display:grid;place-items:center;border-radius:50%;border:3px solid transparent;width:76px;height:76px;transition:transform .1s}
+.wc .c i{border-radius:50%;display:block}
+.wc[data-k="auto"] i{width:36px;height:36px;border:2px dashed var(--muted)}
+.wc[data-k="daily"] i{width:52px;height:52px;background:var(--amber)}
+.wc[data-k="big"] i{width:68px;height:68px;background:var(--wine)}
+.wc[aria-pressed="true"] .c{border-color:var(--ink);transform:scale(1.06)}
+.wc[aria-pressed="true"]{color:var(--ink);font-weight:700}
+.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.dc{aspect-ratio:1;border-radius:50%;border:0;background:var(--butter);display:grid;place-items:center;text-align:center;
+  font-size:13px;line-height:1.2;padding:4px;min-width:0;overflow-wrap:anywhere}
+.dc[aria-pressed="true"]{background:var(--wine);color:var(--butter);font-weight:700}
+.sh-act{display:flex;gap:10px;margin-top:18px}
+.sh-act .primary{flex:1}
+@media (prefers-reduced-motion: reduce){.go,.wc .c{transition:none}}
+@media (max-width:360px){.bar{grid-template-columns:84px 1fr 28px}.dc{font-size:12px}}
+</style>
+
+<div id="app" lang="en" class="wrap">
+  <div class="top"><h1>Decision Log</h1><span class="date" id="dateline"></span></div>
+
+  <section id="v-log" aria-label="Log">
+    <div class="stage">
+      <button class="go" id="go" type="button">I made<br>a decision</button>
+    </div>
+    <p class="stat" id="stat"></p>
+    <h2>Today's decisions</h2>
+    <div id="today"></div>
+    <p class="foot" id="status"></p>
+  </section>
+
+  <section id="v-sift" aria-label="Sift" hidden>
+    <div class="cap">Period</div>
+    <div class="chips" id="f-range"></div>
+    <div class="cap">Weight</div>
+    <div class="chips" id="f-weight"></div>
+    <div class="cap">Domain</div>
+    <div class="chips" id="f-domain"></div>
+    <div class="sum" id="sum"></div>
+    <h2>Rhythm of the day</h2>
+    <p class="hint">Each bar is one hour. It shows when decisions storm and when it goes quiet.</p>
+    <div id="rhythm-box"></div>
+    <h2>Weight breakdown</h2>
+    <div class="bars" id="b-weight"></div>
+    <h2>Domain breakdown</h2>
+    <div class="bars" id="b-domain"></div>
+    <h2>Decisions</h2>
+    <div id="siftlist"></div>
+    <div style="margin-top:18px"><button class="btn" id="export" type="button" hidden>Export CSV</button><div class="msg" id="exp-msg" role="status"></div></div>
+  </section>
+
+  <nav class="tabs" aria-label="Navigation"><div>
+    <button class="tab" id="tab-log" type="button" aria-selected="true">Log</button>
+    <button class="tab" id="tab-sift" type="button" aria-selected="false">Sift</button>
+  </div></nav>
+</div>
+
+<div class="scrim" id="scrim" hidden lang="en">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title">
+    <div class="sh-top"><h3 id="sh-title">Decision at <span class="tm" id="sh-time"></span></h3><button class="btn danger" id="sh-del" type="button">Delete</button></div>
+    <input class="note" id="note" type="text" maxlength="120" placeholder="What was it? A few words (optional)" autocomplete="off">
+    <div class="cap" style="margin-top:16px">Weight</div>
+    <div class="wrow" id="wrow"></div>
+    <div class="cap" style="margin-top:14px">Domain</div>
+    <div class="dgrid" id="dgrid"></div>
+    <div class="sh-act"><button class="btn primary" id="sh-done" type="button">Done</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+var WEIGHTS=[{k:'auto',l:'Automatic'},{k:'daily',l:'Daily'},{k:'big',l:'Important'}];
+var DOMAINS=[{k:'work',l:'Work'},{k:'show',l:'Exhibition'},{k:'study',l:'Study'},{k:'people',l:'People'},{k:'money',l:'Money'},{k:'food',l:'Food & clothes'},{k:'health',l:'Health'},{k:'move',l:'Moving around'}];
+var WL={},DL={};WEIGHTS.forEach(function(w){WL[w.k]=w.l});DOMAINS.forEach(function(d){DL[d.k]=d.l});
+var LS='decisionlog.v1';
+var items=[],col=null,mode='boot',view='log',range='today',fw='all',fd='all',openId=null,noteTimer=null;
+var inflight={},chains={},deleted={},syncTimer=null;
+
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pad(n){return n<10?'0'+n:''+n}
+function fmtTime(ts){var d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function startOfDay(ts){var d=new Date(ts);d.setHours(0,0,0,0);return d.getTime()}
+function dateStr(ts){try{return new Date(ts).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}catch(e){return new Date(ts).toDateString()}}
+function dayLabel(ts){
+  var diff=Math.round((startOfDay(Date.now())-startOfDay(ts))/864e5);
+  if(diff===0)return 'Today';if(diff===1)return 'Yesterday';return dateStr(ts);
+}
+function ago(ts){
+  var m=Math.floor((Date.now()-ts)/60000);
+  if(m<1)return 'just now';if(m<60)return m+' min ago';var h=Math.floor(m/60);return h+' hr ago';
+}
+function newId(){return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+function lsRead(){try{var a=JSON.parse(localStorage.getItem(LS)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function lsWrite(){}
+function sortItems(){items.sort(function(a,b){return b.ts-a.ts})}
+function find(id){for(var i=0;i<items.length;i++)if(items[i].id===id)return items[i];return null}
+
+function setStatus(msg){
+  var el=$('status');
+  if(msg){el.textContent=msg;return}
+  el.textContent = mode==='db' ? 'Saved to your account. It shows on any device you open it from.' :
+    mode==='local' ? 'Saved in this browser only. If you clear browser data, it is lost.' : 'Loading...';
+}
+
+function body(it){return {ts:it.ts,note:it.note||'',weight:it.weight||null,domain:it.domain||null}}
+function persist(it){
+  it._v=(it._v||0)+1;var v=it._v;it._p=true;lsWrite();
+  if(!col)return;
+  var id=it.id;inflight[id]=true;
+  chains[id]=(chains[id]||Promise.resolve()).then(function(){return col.doc(id).set(body(it))}).then(function(){
+    if(it._v===v)it._p=false;lsWrite();
+  }).catch(function(){setStatus('Could not save to your account. Kept here, will retry.')}).then(function(){delete inflight[id]});
+}
+function removeItem(id){
+  items=items.filter(function(i){return i.id!==id});deleted[id]=true;lsWrite();
+  if(col){chains[id]=(chains[id]||Promise.resolve()).then(function(){return col.doc(id).delete()}).catch(function(){})}
+}
+
+function onSnap(snap){
+  if(!snap.metadata.fromCache){clearTimeout(syncTimer);setStatus()}
+  var local={};items.forEach(function(i){local[i.id]=i});
+  var ids={},merged=[];
+  snap.docs.forEach(function(d){
+    if(deleted[d.id])return;
+    ids[d.id]=1;var l=local[d.id];
+    if(l&&l._p){merged.push(l)}else{var x=d.data();merged.push({id:d.id,ts:x.ts,note:x.note||'',weight:x.weight||null,domain:x.domain||null})}
+  });
+  items.forEach(function(i){if(i._p&&!ids[i.id]){merged.push(i)}});
+  items=merged;sortItems();lsWrite();
+  items.forEach(function(i){if(i._p&&!ids[i.id]&&!inflight[i.id])persist(i)});
+  renderAll();
+}
+async function initBackend(){
+  try{
+    if(!window.claude||!window.claude.use){mode='local';setStatus();return}
+    var r=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    var db=r[0],user=r[1];
+    if(!db||!user){mode='local';setStatus();return}
+    var uid=await user.id();
+    if(!uid){mode='local';setStatus();return}
+    col=db.collection('data/users/'+uid);mode='db';setStatus('Connecting to your account...');
+    syncTimer=setTimeout(function(){setStatus('Cannot reach your account yet. Decisions are kept here and will upload later.')},10000);
+    col.orderBy('ts','desc').limit(1000).onSnapshot(onSnap,function(){mode='local';col=null;setStatus()});
+  }catch(e){mode='local';col=null;setStatus()}
+}
+
+function rowHTML(i){
+  var w=i.weight||'none';
+  return '<button class="row" type="button" data-id="'+esc(i.id)+'"><span class="t">'+fmtTime(i.ts)+'</span>'+
+    '<span class="n">'+(i.note?esc(i.note):'<em>No description</em>')+'</span>'+
+    '<span class="m"><span class="dot '+w+'" aria-hidden="true"></span>'+(i.domain?'<span>'+esc(DL[i.domain]||'')+'</span>':'')+
+    '<span class="sr">'+(i.weight?esc(WL[i.weight]):'Unsorted')+'</span></span></button>';
+}
+function renderLog(){
+  var s=startOfDay(Date.now());
+  var today=items.filter(function(i){return i.ts>=s});
+  var un=today.filter(function(i){return !i.weight}).length;
+  var st=$('stat');
+  if(!today.length){st.innerHTML='No decisions logged today yet.'}
+  else{st.innerHTML='Today <b>'+today.length+'</b> '+(today.length===1?'decision':'decisions')+' · last one '+ago(today[0].ts)+(un?' · <b>'+un+'</b> unsorted':'')}
+  $('today').innerHTML = today.length ? today.map(rowHTML).join('') :
+    '<div class="empty">Tap the button the moment you notice you chose something, even a small thing. Sorting can come later.</div>';
+}
+
+function chipRow(el,opts,cur,fn){
+  el.innerHTML=opts.map(function(o){return '<button class="chip" type="button" data-k="'+o.k+'" aria-pressed="'+(o.k===cur)+'">'+esc(o.l)+'</button>'}).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('.chip'),function(b){b.onclick=function(){fn(b.getAttribute('data-k'))}});
+}
+function filtered(){
+  return items.filter(function(i){
+    return (range==='all'||i.day===range)&&(fw==='all'||(fw==='none'?!i.weight:i.weight===fw))&&(fd==='all'||i.domain===fd);
+  });
+}
+function barRows(list,counts,max){
+  return list.map(function(o){var c=counts[o.k]||0;
+    return '<div class="bar"><span>'+esc(o.l)+'</span><span class="track"><span class="fill" style="width:'+(max?Math.round(c/max*100):0)+'%"></span></span><span class="c">'+c+'</span></div>'}).join('');
+}
+function renderSift(){
+  chipRow($('f-range'),[{k:'all',l:'All'},{k:'2026-11-13',l:'Fri 13'},{k:'2026-11-14',l:'Sat 14'},{k:'2026-11-15',l:'Sun 15'},{k:'2026-11-16',l:'Mon 16'}],range,function(k){range=k;renderSift()});
+  chipRow($('f-weight'),[{k:'all',l:'All'}].concat(WEIGHTS,[{k:'none',l:'Unsorted'}]),fw,function(k){fw=k;renderSift()});
+  chipRow($('f-domain'),[{k:'all',l:'All'}].concat(DOMAINS),fd,function(k){fd=k;renderSift()});
+  var list=filtered();
+  var sum=$('sum');
+  if(!list.length){
+    sum.innerHTML='<div class="big">0</div><p>No decisions match this filter. Sifting shows up after the first few decisions.</p>';
+    $('rhythm-box').innerHTML='<div class="empty">The rhythm appears once there are decisions.</div>';
+    $('b-weight').innerHTML='';$('b-domain').innerHTML='';$('siftlist').innerHTML='';return;
+  }
+  var wc={auto:0,daily:0,big:0,none:0},dc={},hours=[],h;
+  for(h=0;h<24;h++)hours.push({auto:0,daily:0,big:0,none:0,n:0});
+  list.forEach(function(i){var w=i.weight||'none';wc[w]++;if(i.domain)dc[i.domain]=(dc[i.domain]||0)+1;
+    var hr=new Date(i.ts).getHours();hours[hr][w]++;hours[hr].n++});
+  var peak=0,pk=0;hours.forEach(function(x,i){if(x.n>peak){peak=x.n;pk=i}});
+  var autoPct=Math.round(wc.auto/list.length*100);
+  sum.innerHTML='<div class="big">'+list.length+'</div><p>'+(list.length===1?'decision':'decisions')+' · '+autoPct+'% automatic · '+wc.big+' important</p>'+
+    '<p>Busiest hour: <b style="color:var(--ink);font-variant-numeric:tabular-nums">'+pad(pk)+':00</b> ('+peak+')</p>';
+  var cols=hours.map(function(x,i){
+    var seg=['big','daily','auto','none'].map(function(k){return x[k]?'<div class="seg '+k+'" style="height:'+(x[k]/peak*100)+'%"></div>':''}).join('');
+    return '<div class="col" title="'+pad(i)+':00 · '+x.n+'">'+seg+'</div>'}).join('');
+  $('rhythm-box').innerHTML='<div class="rhythm" role="img" aria-label="Decisions per hour of the day">'+cols+'</div>'+
+    '<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>'+
+    '<div class="legend"><span><i style="background:var(--wine)"></i>Important</span><span><i style="background:var(--amber)"></i>Daily</span><span><i style="background:var(--butter)"></i>Automatic</span><span><i style="background:var(--line)"></i>Unsorted</span></div>';
+  var wmax=Math.max(wc.auto,wc.daily,wc.big,wc.none);
+  $('b-weight').innerHTML=barRows(WEIGHTS.concat([{k:'none',l:'Unsorted'}]),wc,wmax);
+  var dmax=0;DOMAINS.forEach(function(d){dmax=Math.max(dmax,dc[d.k]||0)});
+  var nodom=list.filter(function(i){return !i.domain}).length;dc.nodom=nodom;dmax=Math.max(dmax,nodom);
+  $('b-domain').innerHTML=barRows(DOMAINS.concat([{k:'nodom',l:'No domain'}]),dc,dmax);
+  var out='',last='',shown=list.slice(0,150);
+  shown.forEach(function(i){var k=startOfDay(i.ts);if(k!==last){last=k;out+='<div class="daylabel">'+esc(dayLabel(i.ts))+'</div>'}out+=rowHTML(i)});
+  if(list.length>150)out+='<p class="hint">Showing the latest 150. Export includes everything.</p>';
+  $('siftlist').innerHTML=out;
+}
+function renderAll(){renderLog();if(view==='sift')renderSift()}
+
+function setView(v){
+  view=v;$('v-log').hidden=v!=='log';$('v-sift').hidden=v!=='sift';
+  $('tab-log').setAttribute('aria-selected',v==='log');$('tab-sift').setAttribute('aria-selected',v==='sift');
+  if(v==='sift')renderSift();window.scrollTo(0,0);
+}
+
+function openSheet(id){
+  var it=find(id);if(!it)return;openId=id;
+  $('sh-time').textContent=fmtTime(it.ts);$('note').value=it.note||'';
+  $('wrow').innerHTML=WEIGHTS.map(function(w){return '<button class="wc" type="button" data-k="'+w.k+'" aria-pressed="'+(it.weight===w.k)+'"><span class="c"><i></i></span>'+w.l+'</button>'}).join('');
+  $('dgrid').innerHTML=DOMAINS.map(function(d){return '<button class="dc" type="button" data-k="'+d.k+'" aria-pressed="'+(it.domain===d.k)+'">'+d.l+'</button>'}).join('');
+  Array.prototype.forEach.call($('wrow').children,function(b){b.onclick=function(){
+    var k=b.getAttribute('data-k');var x=find(openId);if(!x)return;x.weight=x.weight===k?null:k;
+    Array.prototype.forEach.call($('wrow').children,function(c){c.setAttribute('aria-pressed',c.getAttribute('data-k')===x.weight)});
+    persist(x);renderAll()}});
+  Array.prototype.forEach.call($('dgrid').children,function(b){b.onclick=function(){
+    var k=b.getAttribute('data-k');var x=find(openId);if(!x)return;x.domain=x.domain===k?null:k;
+    Array.prototype.forEach.call($('dgrid').children,function(c){c.setAttribute('aria-pressed',c.getAttribute('data-k')===x.domain)});
+    persist(x);renderAll()}});
+  $('scrim').hidden=false;
+}
+function flushNote(){
+  clearTimeout(noteTimer);noteTimer=null;
+  var x=openId&&find(openId);if(!x)return;var v=$('note').value.trim();
+  if(v!==(x.note||'')){x.note=v;persist(x);renderAll()}
+}
+function closeSheet(){flushNote();openId=null;$('scrim').hidden=true}
+
+$('go').onclick=function(){
+  var it={id:newId(),ts:Date.now(),note:'',weight:null,domain:null};
+  items.unshift(it);sortItems();persist(it);renderAll();openSheet(it.id);
+};
+$('note').oninput=function(){clearTimeout(noteTimer);noteTimer=setTimeout(flushNote,500)};
+$('sh-done').onclick=closeSheet;
+$('scrim').onclick=function(e){if(e.target===$('scrim'))closeSheet()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&openId)closeSheet()});
+$('sh-del').onclick=function(){
+  var b=$('sh-del');
+  if(b.getAttribute('data-arm')!=='1'){b.setAttribute('data-arm','1');b.textContent='Sure? Tap again';setTimeout(function(){b.removeAttribute('data-arm');b.textContent='Delete'},3000);return}
+  b.removeAttribute('data-arm');b.textContent='Delete';var id=openId;clearTimeout(noteTimer);openId=null;$('scrim').hidden=true;removeItem(id);renderAll();
+};
+document.addEventListener('click',function(e){
+  var r=e.target.closest&&e.target.closest('.row');if(r&&r.getAttribute('data-id'))openSheet(r.getAttribute('data-id'));
+});
+$('tab-log').onclick=function(){setView('log')};
+$('tab-sift').onclick=function(){setView('sift')};
+
+function csvCell(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+$('export').onclick=async function(){
+  var msg=$('exp-msg');msg.textContent='';
+  var rows=[['Date','Time','Decision','Weight','Domain']];
+  items.slice().sort(function(a,b){return a.ts-b.ts}).forEach(function(i){
+    var d=new Date(i.ts);rows.push([d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),fmtTime(i.ts),i.note||'',i.weight?WL[i.weight]:'',i.domain?DL[i.domain]:''])});
+  if(rows.length===1){msg.textContent='No decisions to export yet.';return}
+  var csv='﻿'+rows.map(function(r){return r.map(csvCell).join(',')}).join('\n');
+  try{
+    var dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(!dl){msg.textContent='Export is not available here.';return}
+    await dl.save({filename:'decisions.csv',data:csv});msg.textContent='Saved.';
+  }catch(e){msg.textContent=(e&&e.code==='declined')?'Save cancelled.':'Could not save the file.'}
+};
+
+$('dateline').textContent=dateStr(Date.now());
+var DATA=[["2026-11-13", "15:15", "", "big", "study"], ["2026-11-13", "15:22", "", "big", "study"], ["2026-11-13", "15:26", "", null, null], ["2026-11-13", "15:26", "", "auto", "move"], ["2026-11-13", "15:28", "Song", "auto", null], ["2026-11-13", "15:33", "Color", null, "show"], ["2026-11-13", "15:40", "", "auto", "move"], ["2026-11-13", "15:46", "", "auto", "move"], ["2026-11-13", "16:16", "Color", null, "show"], ["2026-11-13", "17:11", "", "auto", null], ["2026-11-13", "17:46", "Food", "daily", "food"], ["2026-11-13", "17:46", "Home cleaning", "daily", null], ["2026-11-13", "18:35", "", "daily", "people"], ["2026-11-13", "19:53", "", "big", "show"], ["2026-11-13", "20:16", "", null, "work"], ["2026-11-13", "20:18", "", "auto", "people"], ["2026-11-13", "21:16", "", "daily", "work"], ["2026-11-13", "21:53", "", "big", "show"], ["2026-11-14", "09:00", "", "daily", null], ["2026-11-14", "09:32", "", "daily", null], ["2026-11-14", "10:25", "", "daily", null], ["2026-11-14", "10:25", "", "big", "people"], ["2026-11-14", "11:28", "", "daily", null], ["2026-11-14", "11:32", "", "daily", null], ["2026-11-14", "13:45", "", "big", "show"], ["2026-11-14", "14:18", "", "big", "show"], ["2026-11-14", "14:35", "", "big", "show"], ["2026-11-14", "14:35", "", "daily", "move"], ["2026-11-14", "14:49", "", "big", "show"], ["2026-11-14", "14:50", "", "big", "show"], ["2026-11-14", "16:32", "", "big", "show"], ["2026-11-14", "19:14", "", "big", "show"], ["2026-11-14", "19:14", "", "auto", null], ["2026-11-14", "19:14", "", "daily", "food"], ["2026-11-14", "19:22", "", "auto", null], ["2026-11-14", "19:56", "", "auto", null], ["2026-11-14", "19:57", "", "daily", null], ["2026-11-14", "21:09", "", "daily", null], ["2026-11-14", "21:57", "", "daily", "people"], ["2026-11-14", "22:29", "", "big", "show"], ["2026-11-14", "23:21", "", "daily", null], ["2026-11-15", "07:53", "", "daily", null], ["2026-11-15", "08:59", "", "big", "show"], ["2026-11-15", "08:59", "", "big", "show"], ["2026-11-15", "08:59", "", "big", "show"], ["2026-11-15", "09:17", "", "big", "show"], ["2026-11-15", "09:45", "", "big", "show"], ["2026-11-15", "10:29", "", "daily", null], ["2026-11-15", "11:25", "", "big", "show"], ["2026-11-15", "14:47", "", "big", "show"], ["2026-11-15", "14:47", "", "big", "show"], ["2026-11-15", "14:47", "", null, null], ["2026-11-15", "17:06", "", "big", "show"], ["2026-11-15", "17:35", "", null, null], ["2026-11-15", "20:08", "", "daily", "people"], ["2026-11-15", "20:08", "", "big", "show"], ["2026-11-15", "20:08", "", "daily", null], ["2026-11-16", "05:39", "", "daily", null], ["2026-11-16", "06:54", "", "daily", "study"], ["2026-11-16", "07:48", "", null, "study"], ["2026-11-16", "07:55", "", "big", "show"], ["2026-11-16", "10:14", "", "daily", null], ["2026-11-16", "16:28", "", null, null], ["2026-11-16", "16:28", "", "big", "show"], ["2026-11-16", "16:28", "", "daily", "food"], ["2026-11-16", "16:29", "", "big", "study"], ["2026-11-16", "16:31", "", "daily", null], ["2026-11-16", "16:47", "", "daily", "people"], ["2026-11-16", "17:13", "", "daily", "study"], ["2026-11-16", "19:54", "", "daily", null], ["2026-11-16", "20:15", "", null, "food"], ["2026-11-16", "20:15", "", "auto", null], ["2026-11-16", "20:32", "", "big", "study"], ["2026-11-16", "20:32", "", null, null], ["2026-11-16", "21:23", "", "auto", null], ["2026-11-16", "21:33", "", "daily", null]];
+items=DATA.map(function(r,n){var d=r[0].split('-'),t=r[1].split(':');
+  return {id:'s'+n,ts:new Date(+d[0],+d[1]-1,+d[2],+t[0],+t[1]).getTime(),day:r[0],note:r[2]||'',weight:r[3],domain:r[4]}});
+range='all';mode='local';sortItems();renderAll();setStatus('Demo: try it. Tap, choose, done. Taps here are not saved.');
+setInterval(function(){if(!openId&&view==='log')renderLog()},30000);
+})();
+</script>
+
+</body></html>
