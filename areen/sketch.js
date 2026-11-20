@@ -14,8 +14,8 @@ const G = {
   mode: 'design',                   // design → fight → ko → win
   opp: { name: 'الخصم', gender: 'male', height: 'mid', weight: 'mid' },
   W: 900, H: 520, t: 0,
-  areenHP: 100, oppHP: 10, oppMax: 10, punches: 0, purpleEye: false,
-  a: { punchT: 0, arm: 'front', dodge: 0, hit: 0, win: 0 },
+  areenHP: 100, oppHP: 10, oppMax: 10, punches: 0, kicks: 0, downs: 0, round: 0, purpleEye: false, photo: null, wantPhoto: 0,
+  a: { punchT: 0, kickT: 0, arm: 'front', dodge: 0, hit: 0, win: 0 },
   o: { hit: 0, atk: 'idle', atkT: 0, next: 2.5, punch: 0, ko: 0 },
   shake: 0, msgs: [], sparks: [], confetti: [], koT: 0, crowd: []
 };
@@ -85,6 +85,7 @@ function windowResized(){ sizeCanvas(); }
 function keyPressed(){
   if(G.mode !== 'fight'){ return; }
   if(key === ' ' || key === 'j' || key === 'J' || keyCode === RIGHT_ARROW){ doPunch(); return false; }
+  if(key === 'k' || key === 'K' || keyCode === UP_ARROW){ doKick(); return false; }
   if(keyCode === LEFT_ARROW || keyCode === DOWN_ARROW || key === 'a' || key === 'A'){ doDodge(); return false; }
 }
 
@@ -104,46 +105,54 @@ function draw(){
   drawRopesFront();
   drawSparks(dt);
   pop();
+  if(G.wantPhoto === 1){ capturePhoto(); G.wantPhoto = 2; }   // grab the scene before any overlay
   drawHUD();
   drawMessages(dt);
   if(G.mode === 'design'){ drawDesignOverlay(); }
-  if(G.mode === 'ko' || G.mode === 'win'){ drawKO(dt); }
+  if(G.mode === 'ko' || G.mode === 'win' || G.mode === 'down'){ drawKO(dt); }
 }
 
 // ---------- game logic ----------
 function startFight(){
   G.oppMax = WEIGHTS[G.opp.weight].hp; G.oppHP = G.oppMax;
-  G.areenHP = 100; G.punches = 0; G.purpleEye = false;
-  G.a = { punchT: 0, arm: 'front', dodge: 0, hit: 0, win: 0 };
+  G.areenHP = 100; G.punches = 0; G.kicks = 0; G.downs = 0; G.purpleEye = false; G.wantPhoto = 0; G.round++;
+  G.a = { punchT: 0, kickT: 0, arm: 'front', dodge: 0, hit: 0, win: 0 };
   G.o = { hit: 0, atk: 'idle', atkT: 0, next: 2.2, punch: 0, ko: 0 };
   G.msgs = []; G.sparks = []; G.confetti = []; G.koT = 0;
   G.mode = 'fight';
   bell();
-  say('الجولة الأولى! 🔔', 1.6, true);
+  say(`الجولة ${G.round}! 🔔`, 1.6, true);
   setScreen();
 }
 
 function doPunch(){
-  if(G.mode !== 'fight' || G.a.punchT > 0){ return; }
+  if(G.mode !== 'fight' || G.a.punchT > 0 || G.a.kickT > 0){ return; }
   audio();
   G.a.punchT = 0.3;
   G.a.arm = G.a.arm === 'front' ? 'back' : 'front';
   G.a.landed = false;
+}
+function doKick(){
+  if(G.mode !== 'fight' || G.a.punchT > 0 || G.a.kickT > 0){ return; }
+  audio();
+  G.a.kickT = 0.42; G.a.kLanded = false;
 }
 function doDodge(){
   if(G.mode !== 'fight'){ return; }
   G.a.dodge = 0.5;
 }
 
-function landPunch(){
-  G.punches++;
-  G.oppHP = Math.max(0, G.oppHP - 1);
+function landPunch(isKick){
+  if(isKick){ G.kicks++; } else { G.punches++; }
+  G.oppHP = Math.max(0, G.oppHP - (isKick ? 2 : 1));
   G.o.hit = 1;
   G.o.atk = 'idle'; G.o.next = Math.max(G.o.next, 0.9);   // a hit interrupts the opponent's attack
   thump(G.punches % 3 === 0);
   const hx = G.W * 0.6 - G.H * 0.03, hy = G.H * 0.86 - G.H * 0.0092 * (40 * HEIGHTS[G.opp.height].k + 6);
   for(let i = 0; i < 14; i++){ G.sparks.push({ x: hx, y: hy, vx: (Math.random() - 0.3) * 260, vy: (Math.random() - 0.6) * 240, life: 0.5, c: i % 2 ? '#ffe066' : '#ffffff' }); }
-  if(G.punches === 4){
+  if(isKick){
+    say('رفسة! 🦵', 0.8);
+  } else if(G.punches === 4 && !G.purpleEye){
     G.purpleEye = true;
     say('عين بنفسجية! 💜', 1.6);
   } else {
@@ -151,8 +160,12 @@ function landPunch(){
     say(words[G.punches % words.length], 0.7);
   }
   if(G.oppHP <= 0){
-    G.mode = 'ko'; G.koT = 0;
+    G.downs++;
+    G.koT = 0; G.o.atk = 'idle';
     thump(true);
+    // the opponent gets back up twice — the third fall is the knockout
+    G.mode = G.downs >= 3 ? 'ko' : 'down';
+    if(G.mode === 'down'){ say('سقط! ⬇️', 1); }
     setScreen();
   }
 }
@@ -162,6 +175,23 @@ function update(dt){
   a.dodge = Math.max(0, a.dodge - dt);
   a.hit = Math.max(0, a.hit - dt * 3);
   o.hit = Math.max(0, o.hit - dt * 2.5);
+  if(a.kickT > 0){
+    a.kickT -= dt;
+    if(!a.kLanded && a.kickT < 0.22 && G.mode === 'fight'){ a.kLanded = true; landPunch(true); }
+    if(a.kickT < 0){ a.kickT = 0; }
+  }
+  if(G.mode === 'down'){
+    G.koT += dt;
+    if(G.koT < 2.4){ o.ko = Math.min(1, o.ko + dt * 1.6); }
+    else { o.ko = Math.max(0, o.ko - dt * 1.4); }
+    if(G.koT > 3.2){
+      G.mode = 'fight'; o.ko = 0;
+      G.oppHP = Math.ceil(G.oppMax * 0.6);
+      o.next = 1.4;
+      say(G.downs === 1 ? 'قام من جديد! 😤' : 'قام مرة ثانية!! 😱', 1.4, true);
+      setScreen();
+    }
+  }
   if(a.punchT > 0){
     a.punchT -= dt;
     if(!a.landed && a.punchT < 0.17 && G.mode === 'fight'){ a.landed = true; landPunch(); }
@@ -189,15 +219,23 @@ function update(dt){
     G.koT += dt;
     o.ko = Math.min(1, o.ko + dt * 1.6);
     if(G.mode === 'ko' && G.koT > 3.3){
-      G.mode = 'win'; bell();
+      G.mode = 'win'; bell(); G.photoT = 0;
       for(let i = 0; i < 160; i++){ G.confetti.push({ x: Math.random() * G.W, y: -Math.random() * G.H, vy: 80 + Math.random() * 140, r: Math.random() * 6, c: ['#f2b632', '#e0445a', '#3b6fd6', '#ffffff', '#7a3fb0'][i % 5], s: Math.random() * 6 }); }
       setScreen();
     }
-    if(G.mode === 'win'){ a.win = Math.min(1, a.win + dt * 2); }
+    if(G.mode === 'win'){
+      a.win = Math.min(1, a.win + dt * 2);
+      G.photoT += dt;
+      if(G.photoT > 1.1 && G.wantPhoto === 0){ G.wantPhoto = 1; }   // souvenir photo once the pose is set
+    }
   }
 }
 
-function say(txt, life, big){ G.msgs.push({ txt, life, max: life, big: !!big }); }
+function say(txt, life, big){
+  // one big banner + one small callout at a time, so they never overlap
+  G.msgs = G.msgs.filter(m => m.big !== !!big);
+  G.msgs.push({ txt, life, max: life, big: !!big });
+}
 
 // ---------- arena ----------
 function drawArena(){
@@ -255,8 +293,12 @@ function drawBody(look, x, floorY, u, hk, wk, facing, pose){
   // legs
   const legW = 2.6 * wk + 0.6;
   limbU([[-f * 1.2 * wk, hipY], [-f * 3.6, -9], [-f * 4.6, -1.2]], u, look.legs, legW);
-  limbU([[f * 1.2 * wk, hipY], [f * 3.4, -9.5], [f * 4.8, -1.2]], u, look.legs, legW);
-  ovalU(-f * 4.8, -0.8, 2.3, 1.1, u, look.shoes); ovalU(f * 5.2, -0.8, 2.3, 1.1, u, look.shoes);
+  const kk = pose.kick || 0;
+  const footF = [f * (4.8 + kk * Math.max(6, (G.gap || 22) - 7)), -1.2 + kk * (hipY * 0.75)];
+  const kneeF = [f * (3.4 + kk * 5), -9.5 + kk * (hipY * 0.35)];
+  limbU([[f * 1.2 * wk, hipY], kneeF, footF], u, look.legs, legW);
+  ovalU(-f * 4.8, -0.8, 2.3, 1.1, u, look.shoes);
+  push(); translate(footF[0] * u, (footF[1] + 0.4) * u); rotate(-f * kk * 1.2); ovalU(f * 0.4, 0, 2.3, 1.1, u, look.shoes); pop();
   if(look.shorts){
     shapeU([['M', -hips / 2, hipY - 3], ['L', hips / 2, hipY - 3], ['L', hips / 2 + 0.8, hipY + 5], ['L', 0.6, hipY + 4.4], ['L', -0.6, hipY + 4.4], ['L', -hips / 2 - 0.8, hipY + 5]], u, look.shorts);
     shapeU([['M', -hips / 2 - 0.2, hipY - 3], ['L', hips / 2 + 0.2, hipY - 3], ['L', hips / 2 + 0.2, hipY - 1.8], ['L', -hips / 2 - 0.2, hipY - 1.8]], u, look.band || '#ffffff');
@@ -366,7 +408,9 @@ function drawAreen(x, floorY, u){
   const a = G.a;
   const pt = a.punchT > 0 ? 1 - a.punchT / 0.3 : 0;
   const punch = pt > 0 ? Math.sin(Math.min(1, pt * 1.15) * Math.PI) : 0;
-  const pose = { punch, arm: a.arm, lean: a.dodge > 0 ? 0.22 * ease(Math.min(1, a.dodge * 4)) : 0, headBack: a.hit * 0.8, ko: 0, guard: G.o.atk === 'wind' ? 0.6 : 0 };
+  const kt = a.kickT > 0 ? 1 - a.kickT / 0.42 : 0;
+  const kick = kt > 0 ? Math.sin(Math.min(1, kt * 1.1) * Math.PI) : 0;
+  const pose = { punch, kick, arm: a.arm, lean: (a.dodge > 0 ? 0.22 * ease(Math.min(1, a.dodge * 4)) : 0) + kick * 0.12, headBack: a.hit * 0.8, ko: 0, guard: G.o.atk === 'wind' || kick > 0 ? 0.6 : 0 };
   pose.win = a.win;
   drawBody(AREEN_LOOK, x - (a.dodge > 0 ? u * 2 : 0), floorY, u, 1, 0.95, 1, pose);
   if(G.mode === 'win'){
@@ -474,7 +518,9 @@ function drawHUD(){
   bar(W * 0.04, H * 0.04, bw, bh, G.areenHP / 100, '#f2b632', 'عرين الأسد', false);
   bar(W * 0.6, H * 0.04, bw, bh, G.oppHP / G.oppMax, '#e0445a', G.opp.name || 'الخصم', true);
   fill(255); textAlign(CENTER, CENTER); textStyle(BOLD); textSize(Math.max(13, H * 0.035));
-  text('لكمات: ' + G.punches, W / 2, H * 0.065);
+  text(`لكمات ${G.punches} · رفسات ${G.kicks}`, W / 2, H * 0.065);
+  textSize(Math.max(11, H * 0.028)); fill(255, 255, 255, 200);
+  text(`سقطات ${G.downs} من 3`, W / 2, H * 0.115);
 }
 function drawMessages(dt){
   for(let i = G.msgs.length - 1; i >= 0; i--){
@@ -483,7 +529,7 @@ function drawMessages(dt){
     const s = (m.big ? 0.09 : 0.065) * G.H * (1 + 0.25 * Math.sin(Math.min(1, k * 4) * Math.PI));
     textAlign(CENTER, CENTER); textStyle(BOLD); textSize(s);
     stroke(30, 20, 60, 230 * (m.life / m.max)); strokeWeight(6); fill(255, 236, 120, 255 * Math.min(1, m.life * 2));
-    text(m.txt, G.W / 2, G.H * (0.24 - k * 0.05) - i * s * 1.1);
+    text(m.txt, G.W / 2, G.H * ((m.big ? 0.22 : 0.33) - k * 0.04));
     noStroke();
   }
 }
@@ -495,6 +541,14 @@ function drawDesignOverlay(){
 }
 function drawKO(dt){
   const W = G.W, H = G.H;
+  if(G.mode === 'down'){
+    const n = Math.min(2, Math.floor((G.koT - 0.6) / 0.8) + 1);
+    if(n >= 1 && G.koT < 2.4){
+      textAlign(CENTER, CENTER); textStyle(BOLD); textSize(H * 0.18);
+      stroke(30, 20, 60); strokeWeight(8); fill(255); text(String(n), W / 2, H * 0.36); noStroke();
+    }
+    return;
+  }
   if(G.mode === 'ko'){
     const n = Math.min(3, Math.floor((G.koT - 0.6) / 0.8) + 1);
     if(n >= 1){
@@ -514,7 +568,57 @@ function drawKO(dt){
   fill(20, 16, 40, 220); rect(W / 2 - bw / 2, H * 0.14, bw, bh, 22);
   textAlign(CENTER, CENTER); textStyle(BOLD);
   fill(242, 182, 50); textSize(Math.max(22, H * 0.075)); text('🏆 عرين الأسد تفوز! 🏆', W / 2, H * 0.21);
-  fill(255); textSize(Math.max(14, H * 0.04)); text(`بالضربة القاضية على ${G.opp.name || 'الخصم'} بعد ${G.punches} لكمات`, W / 2, H * 0.31);
+  fill(255); textSize(Math.max(14, H * 0.04)); text(`بالضربة القاضية على ${G.opp.name || 'الخصم'} · ${G.punches} لكمات و${G.kicks} رفسات`, W / 2, H * 0.31);
+}
+
+// ---------- souvenir photo ----------
+function capturePhoto(){
+  const src = drawingContext.canvas;
+  const sx = src.width / G.W, sy = src.height / G.H;
+  // crop around the two fighters
+  const cx0 = G.W * 0.22, cy0 = G.H * 0.12, cw = G.W * 0.74, ch = G.H * 0.82;
+  const PW = 1000, PH = 1180, M = 44, IW = PW - M * 2, IH = Math.round(IW * ch / cw);
+  const c = document.createElement('canvas'); c.width = PW; c.height = IH + M + 260;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fbf7ef'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(src, cx0 * sx, cy0 * sy, cw * sx, ch * sy, M, M, IW, IH);
+  // flash glow + date stamp on the picture
+  const fl = g.createRadialGradient(PW * 0.3, M + 40, 10, PW * 0.3, M + 40, IW * 0.7);
+  fl.addColorStop(0, 'rgba(255,255,255,0.35)'); fl.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = fl; g.fillRect(M, M, IW, IH);
+  const d = new Date();
+  const stamp = `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+  g.font = '700 30px monospace'; g.fillStyle = 'rgba(255,170,60,0.95)'; g.textAlign = 'left';
+  g.fillText(stamp, M + 18, M + IH - 20);
+  // caption (polaroid style)
+  g.direction = 'rtl'; g.textAlign = 'center'; g.fillStyle = '#1d1936';
+  g.font = '900 64px Cairo, sans-serif';
+  g.fillText('🏆 عرين الأسد', PW / 2, IH + M + 100);
+  g.font = '700 38px Cairo, sans-serif'; g.fillStyle = '#5b5577';
+  g.fillText(`ضد ${G.opp.name || 'الخصم'} · الجولة ${G.round} · ضربة قاضية`, PW / 2, IH + M + 170);
+  g.font = '400 30px Cairo, sans-serif'; g.fillStyle = '#8a84a6';
+  g.fillText(`${G.punches} لكمات · ${G.kicks} رفسات · عين بنفسجية 💜`, PW / 2, IH + M + 222);
+  G.photo = c;
+  $('photoImg').src = c.toDataURL('image/png');
+  setTimeout(showPhoto, 900);
+  setScreen();
+}
+function showPhoto(){ if(G.photo){ $('photoMsg').textContent = ''; $('photoModal').classList.remove('hidden'); } }
+let downloads = null;
+(async () => { try{ if(window.claude && claude.use){ downloads = await claude.use('downloads'); } }catch(e){} })();
+function downloadPhoto(){
+  if(!G.photo){ return; }
+  const name = `areen-al-asad-round${G.round}.png`;
+  G.photo.toBlob(async blob => {
+    if(downloads){
+      try{ await downloads.save({ filename: name, data: blob }); $('photoMsg').textContent = 'تم الحفظ ✓'; }
+      catch(e){ if(e && e.code !== 'declined'){ $('photoMsg').textContent = 'التنزيل غير متاح هنا — اضغطي مطوّلًا على الصورة لحفظها'; } }
+    } else {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      $('photoMsg').textContent = 'إذا ما نزلت، اضغطي مطوّلًا على الصورة واختاري حفظ';
+    }
+  }, 'image/png');
 }
 
 // ---------- drawing pad (hair + features, by hand) ----------
@@ -632,6 +736,13 @@ const UI_CSS = `
   #fightBar{display:flex;gap:10px;flex-wrap:wrap;padding:8px 20px;align-items:center}
   .big{font:inherit;font-size:18px;font-weight:900;padding:12px 22px;border:0;border-radius:16px;color:#1d1936;background:#f2b632;cursor:pointer;touch-action:manipulation}
   .big.alt{background:#7fb2ff}
+  .big.kick{background:#e0445a;color:#fff}
+  #photoModal{position:fixed;inset:0;background:rgba(10,8,24,.82);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  #photoBox{background:#1d1936;border-radius:20px;padding:16px;max-width:min(92vw,520px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #photoBox img{width:100%;height:auto;border-radius:10px;display:block}
+  #photoBox h3{margin:0 0 10px;font-size:20px;color:#f2b632}
+  #photoBox .row{justify-content:center;margin:12px 0 0}
+  #photoMsg{font-size:13px;opacity:.8;margin-top:8px;min-height:1em}
   .big.ghost{background:transparent;color:#f5f0ff;border:1px solid #3d3766}
   #stage{padding:4px 20px 10px}
   #stage canvas{display:block;width:100%;height:auto;border-radius:18px;touch-action:none}
@@ -666,12 +777,20 @@ function buildUIHtml(){
 </div>
 <div id="fightBar" class="hidden">
   <button class="big" id="btnPunch">🥊 لكمة</button>
+  <button class="big kick" id="btnKick">🦵 رفسة</button>
   <button class="big alt" id="btnDodge">↩️ تفادي</button>
+  <button class="big ghost hidden" id="btnPhoto">📸 الصورة</button>
   <button class="big ghost hidden" id="btnAgain">🔁 جولة جديدة</button>
   <button class="big ghost" id="btnDesign">✏️ خصم جديد</button>
 </div>
 <div id="stage"></div>
-<div class="help" id="help">لما تبدأ الجولة: كبسة على الحلبة أو مسافة = لكمة · سهم يسار = تفادي (لما يطلع "!" فوق الخصم)</div>`;
+<div class="help" id="help">لما تبدأ الجولة: كبسة على الحلبة أو مسافة = لكمة · K أو سهم لفوق = رفسة · سهم يسار = تفادي (لما يطلع "!" فوق الخصم) · الخصم بيقوم مرتين قبل الضربة القاضية</div>
+<div id="photoModal" class="hidden"><div id="photoBox">
+  <h3>📸 صورة تذكارية</h3>
+  <img id="photoImg" alt="عرين الأسد مع الخصم">
+  <div class="row"><button class="big" id="photoDl">⬇️ تنزيل الصورة</button><button class="big ghost" id="photoClose">إغلاق</button></div>
+  <div id="photoMsg"></div>
+</div></div>`;
 }
 function ensureUI(){
   if(document.getElementById('pad')){ return; }
@@ -687,8 +806,11 @@ function setScreen(){
   const design = G.mode === 'design';
   $('designer').classList.toggle('hidden', !design);
   $('fightBar').classList.toggle('hidden', design);
-  $('btnPunch').classList.toggle('hidden', G.mode !== 'fight');
-  $('btnDodge').classList.toggle('hidden', G.mode !== 'fight');
+  const inFight = G.mode === 'fight' || G.mode === 'down';
+  $('btnPunch').classList.toggle('hidden', !inFight);
+  $('btnKick').classList.toggle('hidden', !inFight);
+  $('btnDodge').classList.toggle('hidden', !inFight);
+  $('btnPhoto').classList.toggle('hidden', !(G.mode === 'win' && G.photo));
   $('btnAgain').classList.toggle('hidden', G.mode !== 'win');
   setTimeout(sizeCanvas, 0);
 }
@@ -708,6 +830,10 @@ function initUI(){
   $('goFight').onclick = () => { audio(); startFight(); window.scrollTo({ top: $('fightBar').offsetTop - 10, behavior: 'smooth' }); };
   $('btnPunch').addEventListener('pointerdown', e => { e.preventDefault(); doPunch(); });
   $('btnDodge').addEventListener('pointerdown', e => { e.preventDefault(); doDodge(); });
+  $('btnKick').addEventListener('pointerdown', e => { e.preventDefault(); doKick(); });
+  $('btnPhoto').onclick = () => showPhoto();
+  $('photoClose').onclick = () => $('photoModal').classList.add('hidden');
+  $('photoDl').onclick = () => downloadPhoto();
   $('btnAgain').onclick = () => startFight();
   $('btnDesign').onclick = () => { G.mode = 'design'; G.o.ko = 0; G.purpleEye = false; G.punches = 0; setScreen(); };
   buildSwatches(); syncTools();
