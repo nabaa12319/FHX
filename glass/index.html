@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>استوديو الزجاج ثلاثي الأبعاد</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a precise studio tool for an artist and a glazier — calm, exact, no decoration.
+   IDEA: the gallery's own floor plan + the glazier's cutting table.
+   PICTURE: the live 3D gallery (10×20×5 m) fills the screen; the cutting table opens over it.
+   COLOUR and TYPE: graphite night room #121417, glass cyan #8fe3dc, warning red #ff5a44, amber #ffb547; IBM Plex Sans Arabic.
+   LAYOUT: viewport left, tool column right (RTL); below 820px the tools become a bottom sheet. */
+:root{color-scheme:dark;--bg:#121417;--panel:#1a1d21;--line:#2b3036;--ink:#e9edf0;--mute:#9aa3ab;--glass:#8fe3dc;--red:#ff5a44;--amber:#ffb547}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans Arabic",system-ui,sans-serif;overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+button{background:#22272c;border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-height:38px;cursor:pointer}
+button:hover{border-color:#46505a}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--glass);outline-offset:1px}
+button.pri{background:var(--glass);color:#0b1a19;border-color:var(--glass);font-weight:700}
+button.warn{border-color:#5a2a24;color:#ffb3a8}
+select,input[type=number],input[type=text]{background:#0f1114;border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-height:36px;width:100%;font-size:15px}
+input[type=range]{width:100%;accent-color:var(--glass)}
+label{font-size:13px;color:var(--mute);display:block}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:#0e1013}
+.brand{font-weight:700;font-size:17px;margin-inline-end:auto}.brand small{color:var(--mute);font-weight:400;font-size:13px;margin-inline-start:6px}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.mode{font-weight:500}.mode.on{background:#0f2a28;border-color:var(--glass);color:var(--glass)}
+#mDanger.on{background:#2a1512;border-color:var(--red);color:#ffb3a8}#mPhys.on{background:#2a2310;border-color:var(--amber);color:var(--amber)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+#view{position:relative;min-height:0;overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:absolute;top:10px;inset-inline-start:10px;background:rgba(14,16,19,.82);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;display:flex;gap:14px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+#hud b{display:block;font-size:16px;color:var(--ink);white-space:nowrap}#hud span{color:var(--mute)}
+.views{position:absolute;bottom:10px;inset-inline-start:10px;display:flex;gap:6px;flex-wrap:wrap}
+.views button{background:rgba(20,23,27,.85);font-size:13px;min-height:34px;padding:6px 10px}
+#modeNote{position:absolute;bottom:10px;inset-inline-end:10px;background:rgba(14,16,19,.85);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;display:none}
+#toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#0f2a28;border:1px solid var(--glass);color:var(--ink);padding:8px 14px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s}
+#toast.show{opacity:1}
+aside{border-inline-start:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);flex:none}
+.tabs button{border:0;border-radius:0;background:none;padding:10px 12px;color:var(--mute);white-space:nowrap;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--glass)}
+.scrollY{overflow-y:auto;padding:12px;flex:1;min-height:0}
+section.tab{display:none}section.tab.on{display:block}
+h3{font-size:15px;margin:14px 0 8px}h3:first-child{margin-top:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.list{display:flex;flex-direction:column;gap:4px}
+.item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#15181b;cursor:pointer;font-size:14px}
+.item.sel{border-color:var(--glass)}.item small{color:var(--mute);white-space:nowrap}
+.item.bad{border-color:var(--red)}.item.mid{border-color:var(--amber)}
+#props{border:1px solid #2f4a48;background:#141c1c;border-radius:10px;padding:10px;margin-bottom:12px;display:none}
+#props.show{display:block}
+.note{font-size:12.5px;color:var(--mute);margin:6px 0}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:8px 0}
+.chk input{width:18px;height:18px;accent-color:var(--glass)}
+.stat{display:flex;justify-content:space-between;font-size:13.5px;padding:3px 0;border-bottom:1px dashed #2a2f34}.stat b{white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:start}td input{min-height:30px;padding:3px 6px;font-size:14px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:#22302f;color:var(--glass)}.tag.e{background:#2b2618;color:var(--amber)}
+.issue{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:13.5px;cursor:pointer;border:1px solid}
+.issue.r{border-color:#5a2a24;background:#1f1311}.issue.o{border-color:#5a4520;background:#1f1a10}
+/* cutter */
+#cutter{position:fixed;inset:0;background:rgba(10,12,14,.96);z-index:20;display:none;grid-template-columns:minmax(0,1fr) 340px}
+#cutter.show{display:grid}
+#cutWrap{position:relative;min-height:0}#cutCv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#cutSide{border-inline-start:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:14px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.seg button{flex:1;border:0;border-radius:0}.seg button.on{background:var(--glass);color:#0b1a19;font-weight:700}
+@media(max-width:820px){
+ main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,55fr) minmax(0,45fr)}
+ aside{border-inline-start:0;border-top:1px solid var(--line)}
+ header{padding:6px 8px}.brand small{display:none}.acts button,.modes button{padding:6px 9px;font-size:13px}
+ #hud{font-size:12px;gap:10px;padding:6px 8px}#hud b{font-size:14px}
+ #cutter{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,50fr) minmax(0,50fr)}
+ #cutSide{border-inline-start:0;border-top:1px solid var(--line)}
+}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+ "cannon-es":"https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+ "fflate":"https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js"
+}}
+</script>
+</head>
+<body>
+<div class="app">
+<header>
+ <div class="brand">استوديو الزجاج <small>حيّز فني 10 × 20 م، ارتفاع 5 م · مقياس حقيقي</small></div>
+ <div class="modes">
+  <button id="mBuild" class="mode on" title="البناء بدون جاذبية: الألواح تبقى حيث تضعها">١ · بدون جاذبية</button>
+  <button id="mDanger" class="mode" title="محاكاة قصيرة تكشف الألواح التي ستسقط أو تنقلب أو تنكسر">٢ · نقاط الخطر</button>
+  <button id="mPhys" class="mode" title="تشغيل الفيزياء كاملة: الألواح تسقط وتتصادم">٣ · تفعيل الفيزياء</button>
+ </div>
+ <div class="acts">
+  <button id="bShot">صورة PNG</button>
+  <button id="bGlb">ملف Blender</button>
+  <button id="bSave">حفظ المشروع</button>
+  <button id="bOpen">فتح</button>
+  <input type="file" id="fOpen" accept=".json,application/json" hidden>
+ </div>
+</header>
+<main>
+ <div id="view">
+  <canvas id="c"></canvas>
+  <div id="hud"></div>
+  <div class="views">
+   <button data-view="persp">منظور</button><button data-view="top">من الأعلى</button><button data-view="front">أمامي</button><button data-view="eye">بعين الزائر</button>
+  </div>
+  <div id="modeNote"></div>
+  <div id="toast"></div>
+ </div>
+ <aside>
+  <nav class="tabs">
+   <button data-tab="glass" class="on">الزجاج</button>
+   <button data-tab="cut">القص</button>
+   <button data-tab="light">الإضاءة</button>
+   <button data-tab="proj">أجهزة العرض</button>
+   <button data-tab="cat">الأنواع والأسعار</button>
+  </nav>
+  <div class="scrollY">
+   <div id="props"></div>
+   <div id="issues"></div>
+   <section class="tab on" id="tab-glass">
+    <h3>إضافة لوح زجاج</h3>
+    <div class="grid2">
+     <div><label for="aType">النوع</label><select id="aType"></select></div>
+     <div><label for="aTh">السماكة</label><select id="aTh"></select></div>
+    </div>
+    <div style="margin-top:8px"><label for="aSize">المقاس</label><select id="aSize">
+     <option value="60x100">60 × 100 سم</option><option value="100x200">100 × 200 سم</option><option value="120x240" selected>120 × 240 سم</option>
+     <option value="150x300">150 × 300 سم</option><option value="225x321">225 × 321 سم (نصف جامبو كامل)</option><option value="c">مقاس خاص…</option></select></div>
+    <div class="grid2" id="aCustom" style="margin-top:8px;display:none">
+     <div><label for="aW">العرض (سم)</label><input type="number" id="aW" value="100" min="5" step="1"></div>
+     <div><label for="aH">الارتفاع (سم)</label><input type="number" id="aH" value="200" min="5" step="1"></div>
+    </div>
+    <div style="margin-top:8px"><label for="aOri">الوضعية</label><select id="aOri"><option value="s">واقف</option><option value="s90">واقف مُدار 90°</option><option value="f">أفقي (مسطّح)</option></select></div>
+    <label class="chk"><input type="checkbox" id="aAnch"> مثبّت (كلبسات/براغي للأرض أو السقف)</label>
+    <div class="row"><button class="pri" id="bAdd">إضافة لوح</button><button id="bNew" class="warn">مشروع جديد فارغ</button></div>
+    <h3>الألواح في النموذج</h3>
+    <div class="list" id="pList"></div>
+    <p class="note">انقر لوحًا لتحديده. اسحب الأسهم لتحريكه، أو اضغط R للتدوير وT للتحريك، D للنسخ، Delete للحذف، Ctrl+Z للتراجع.</p>
+   </section>
+   <section class="tab" id="tab-cut">
+    <h3>صفحة قص الزجاج</h3>
+    <p class="note">اختر لوحًا خامًا من المصنع، قطّعه بقصّات مستقيمة من حافة لحافة (كما يقصّ الزجّاج)، ثم أضف القطع إلى النموذج.</p>
+    <button class="pri" id="bOpenCut">افتح طاولة القص</button>
+   </section>
+   <section class="tab" id="tab-light">
+    <h3>الإضاءة العامة</h3>
+    <label for="amb">إضاءة محيطة للحيّز</label><input type="range" id="amb" min="0" max="1.5" step="0.01" value="0.45">
+    <label for="expo">تعريض الكاميرا</label><input type="range" id="expo" min="0.3" max="2.5" step="0.01" value="1">
+    <label class="chk"><input type="checkbox" id="dark"> وضع العرض المظلم (لرؤية أجهزة العرض)</label>
+    <label class="chk"><input type="checkbox" id="ceil"> إظهار السقف</label>
+    <label class="chk"><input type="checkbox" id="cutaway" checked> إخفاء الجدران القريبة من الكاميرا تلقائيًا</label>
+    <h3>مصادر الضوء</h3>
+    <div class="row"><button id="bSpot">+ سبوت (إنارة سكك)</button><button id="bPoint">+ مصباح نقطي</button></div>
+    <div class="list" id="lList"></div>
+    <p class="note">أول 4 سبوتات تُلقي ظلالًا حقيقية. الزجاج يعكس ويكسر الضوء حسب معامل انكسار 1.52.</p>
+   </section>
+   <section class="tab" id="tab-proj">
+    <h3>أجهزة عرض Epson (حتى 10)</h3>
+    <div class="row"><button class="pri" id="bProj">+ جهاز عرض</button><button id="bPlay">تشغيل كل الفيديوهات</button></div>
+    <label class="chk"><input type="checkbox" id="beams" checked> إظهار حزمة الضوء</label>
+    <div class="list" id="jList"></div>
+    <p class="note">كل جهاز يأخذ صورة أو فيديو MP4 خاص به. الصورة تمرّ عبر الزجاج الشفاف (أثر خفيف عليه)، تنعكس عن المرآة، وتظهر بوضوح على الزجاج المطفي والجدران. الحجم يُحسب من نسبة الرمي (Throw ratio) والمسافة الفعلية.</p>
+   </section>
+   <section class="tab" id="tab-cat">
+    <h3>أنواع الزجاج المتوفرة في إسرائيل</h3>
+    <p class="note">السعر بالشيكل للمتر المربع، قابل للتعديل حسب عرض السعر من المصنع. <span class="tag">مصدر</span> = من دليل أسعار ميدراج 2026، <span class="tag e">تقدير</span> = تقدير تقريبي. الوزن: 2.5 كغ لكل م² لكل مم سماكة.</p>
+    <div id="catTbl"></div>
+   </section>
+  </div>
+ </aside>
+</main>
+</div>
+
+<div id="cutter">
+ <div id="cutWrap"><canvas id="cutCv"></canvas></div>
+ <div id="cutSide">
+  <div class="row" style="justify-content:space-between;margin-top:0"><h3 style="margin:0">طاولة القص</h3><button id="cClose">رجوع للنموذج</button></div>
+  <div class="grid2">
+   <div><label for="cType">النوع</label><select id="cType"></select></div>
+   <div><label for="cTh">السماكة</label><select id="cTh"></select></div>
+  </div>
+  <div style="margin-top:8px"><label for="cStock">اللوح الخام</label><select id="cStock">
+   <option value="3210x2250">3210 × 2250 مم (نصف جامبو)</option><option value="6000x3210">6000 × 3210 مم (جامبو)</option><option value="2440x1830">2440 × 1830 مم</option><option value="c">مقاس خاص…</option></select></div>
+  <div class="grid2" id="cCustom" style="margin-top:8px;display:none">
+   <div><label for="cSW">العرض (مم)</label><input type="number" id="cSW" value="2000"></div>
+   <div><label for="cSH">الارتفاع (مم)</label><input type="number" id="cSH" value="1500"></div>
+  </div>
+  <h3>الأداة</h3>
+  <div class="seg" id="cTool"><button data-t="sel" class="on">تحديد</button><button data-t="v">قص عمودي</button><button data-t="h">قص أفقي</button></div>
+  <p class="note">بأداة القص: انقر داخل قطعة لقصّها عند المؤشر (يلتصق كل 5 مم). أو قص القطعة المحددة بقياس دقيق:</p>
+  <div class="grid2"><div><label for="cAt">مسافة القص من البداية (مم)</label><input type="number" id="cAt" value="1000"></div>
+   <div style="display:flex;gap:4px;align-items:end"><button id="cDoV" style="flex:1">عمودي</button><button id="cDoH" style="flex:1">أفقي</button></div></div>
+  <div class="row"><button id="cWaste">تعليم كهدر</button><button id="cUndo">تراجع</button><button id="cReset" class="warn">لوح جديد</button></div>
+  <div id="cSel" class="note"></div>
+  <div class="row"><button class="pri" id="cAdd">أضف المحددة للنموذج</button><button id="cAddAll">أضف كل القطع</button></div>
+  <h3>الحساب</h3>
+  <div id="cStats"></div>
+  <p class="note">الزجاج المقسّى لا يُقصّ بعد التقسية: تُقصّ القطع أولًا ثم تُرسل للتقسية. أقصى مقاس للتقسية يختلف بين المصانع، تأكّد منه.</p>
+ </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {TransformControls} from 'three/addons/controls/TransformControls.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import * as CANNON from 'cannon-es';
+import {zipSync, strToU8} from 'fflate';
+{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const D2R=Math.PI/180, R2D=180/Math.PI, V3=THREE.Vector3;
+const ROOM={w:10,l:20,h:5};
+let uidN=1; const uid=p=>p+(Date.now().toString(36))+(uidN++);
+const fmt=(n,d=0)=>Number(n).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+
+/* ---------- glass catalogue ---------- */
+const TYPES=[
+ {id:'float',ar:'زجاج عادي شفاف',he:'פלוט שקוף',th:[4,5,6,8,10],price:{4:140,5:165,6:190,8:260,10:330},src:[],brk:2.0},
+ {id:'tempered',ar:'زجاج مقسّى شفاف',he:'מחוסם',th:[6,8,10,12],price:{6:350,8:450,10:560,12:700},src:[6,8,10,12],brk:4.5},
+ {id:'laminated',ar:'زجاج مصفّح طبقتين',he:'טריפלקס',th:[8.76,10.76,12.76],lab:{8.76:'4+4',10.76:'5+5',12.76:'6+6'},price:{8.76:420,10.76:500,12.76:600},src:[],brk:3.0},
+ {id:'extraclear',ar:'شفاف إضافي مقسّى',he:'אקסטרה קליר',th:[8,10,12],price:{8:620,10:740,12:900},src:[],brk:4.5},
+ {id:'frosted',ar:'مطفي حليبي مقسّى',he:'חלבי / סאנדבלסט',th:[6,8,10],price:{6:430,8:530,10:650},src:[],brk:4.5},
+ {id:'grey',ar:'رمادي مدخّن مقسّى',he:'אפור',th:[6,8,10],price:{6:400,8:500,10:620},src:[],brk:4.5},
+ {id:'bronze',ar:'برونزي مقسّى',he:'ברונזה',th:[6,8,10],price:{6:400,8:500,10:620},src:[],brk:4.5},
+ {id:'mirror',ar:'مرآة',he:'מראה',th:[4,5,6],price:{4:800,5:850,6:900},src:[4],brk:2.0},
+];
+const TY=id=>TYPES.find(t=>t.id===id)||TYPES[0];
+let priceOv={}; try{priceOv=JSON.parse(localStorage.getItem('gs_prices')||'{}')}catch(e){}
+const priceOf=(id,t)=>priceOv[id+'|'+t]??TY(id).price[t]??0;
+const thLabel=(id,t)=>{const T=TY(id);return T.lab&&T.lab[t]?`${T.lab[t]} (${t} مم)`:`${t} مم`};
+const fillTypes=sel=>{sel.innerHTML=TYPES.map(t=>`<option value="${t.id}">${t.ar} · ${t.he}</option>`).join('')};
+const fillTh=(sel,id,cur)=>{sel.innerHTML=TY(id).th.map(t=>`<option value="${t}" ${+cur===t?'selected':''}>${thLabel(id,t)} · ${priceOf(id,t)} ₪/م²</option>`).join('')};
+
+/* ---------- renderer / scene ---------- */
+const canvas=$('#c'), view=$('#view');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1;
+renderer.shadowMap.enabled=true; renderer.localClippingEnabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0d0f12);
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture; scene.environmentIntensity=0.45;
+const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.45); scene.add(hemi);
+const camera=new THREE.PerspectiveCamera(50,1,0.05,300);
+const orbit=new OrbitControls(camera,canvas); orbit.enableDamping=true; orbit.maxDistance=80;
+function setView(v){
+ const P={persp:[[13,11,17],[0,1.2,0]],top:[[0,32,0.01],[0,0,0]],front:[[0,2.6,-19],[0,2,0]],eye:[[0,1.6,-9.2],[0,1.6,0]]}[v];
+ camera.position.set(...P[0]); orbit.target.set(...P[1]); orbit.update();
+}
+setView('persp');
+
+const roomG=new THREE.Group(), panelG=new THREE.Group(), lightG=new THREE.Group(), projG=new THREE.Group(), quadG=new THREE.Group(), helperG=new THREE.Group(), shardG=new THREE.Group(), dangerG=new THREE.Group();
+roomG.name='Gallery'; panelG.name='Glass'; lightG.name='Lights'; projG.name='Projectors'; quadG.name='Projections';
+scene.add(roomG,panelG,lightG,projG,quadG,helperG,shardG,dangerG);
+
+/* room */
+const walls=[];
+{
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w,ROOM.l),new THREE.MeshStandardMaterial({color:0x7d8083,roughness:0.5,metalness:0}));
+ floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; floor.userData.kind='floor'; floor.name='Floor'; roomG.add(floor);
+ const wm=new THREE.MeshStandardMaterial({color:0xe9e7e2,roughness:0.92});
+ const defs=[[ROOM.w,[0,ROOM.h/2,-ROOM.l/2],0,[0,0,1]],[ROOM.w,[0,ROOM.h/2,ROOM.l/2],Math.PI,[0,0,-1]],[ROOM.l,[-ROOM.w/2,ROOM.h/2,0],Math.PI/2,[1,0,0]],[ROOM.l,[ROOM.w/2,ROOM.h/2,0],-Math.PI/2,[-1,0,0]]];
+ defs.forEach(([len,pos,ry,n],i)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(len,ROOM.h),wm);m.position.set(...pos);m.rotation.y=ry;m.receiveShadow=true;m.userData={kind:'wall',n:new V3(...n)};m.name='Wall'+(i+1);roomG.add(m);walls.push(m)});
+ const ce=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w,ROOM.l),wm); ce.rotation.x=Math.PI/2; ce.position.y=ROOM.h; ce.userData={kind:'wall',n:new V3(0,-1,0),ceil:true}; ce.name='Ceiling'; ce.visible=false; roomG.add(ce); walls.push(ce);
+ // 1 m grid
+ const pts=[]; for(let x=-5;x<=5;x++)pts.push(x,0.002,-10,x,0.002,10); for(let z=-10;z<=10;z++)pts.push(-5,0.002,z,5,0.002,z);
+ const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+ helperG.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0x5c6166,transparent:true,opacity:.35})));
+ helperG.add(label('10 م',[0,0.05,-10.6],1.2)); helperG.add(label('20 م',[5.6,0.05,0],1.2)); helperG.add(label('ارتفاع 5 م',[-5.4,5.2,-10],1.2));
+}
+function label(text,pos,scale=1,color='#cfd6dc',bg=null){
+ const c=document.createElement('canvas');c.width=512;c.height=128;const x=c.getContext('2d');
+ if(bg){x.fillStyle=bg;x.beginPath();x.roundRect(4,14,504,100,24);x.fill()}
+ x.fillStyle=color;x.font='600 64px "IBM Plex Sans Arabic",sans-serif';x.textAlign='center';x.textBaseline='middle';x.direction='rtl';x.fillText(text,256,66);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));
+ s.position.set(...pos); s.scale.set(4*scale*0.5,scale*0.5,1); s.renderOrder=10; return s;
+}
+
+/* ---------- glass panels ---------- */
+const edgeMat=new THREE.LineBasicMaterial({color:0x9fd9d3,transparent:true,opacity:.35});
+const edgeSel=new THREE.LineBasicMaterial({color:0x8fe3dc});
+function makeMat(id,tmm){
+ const m=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:0,transmission:1,ior:1.52,thickness:tmm/1000,specularIntensity:1,attenuationColor:new THREE.Color(0xcfeedd),attenuationDistance:0.8});
+ switch(id){
+  case 'laminated':m.attenuationColor.set(0xd3efe2);m.attenuationDistance=0.55;m.roughness=0.02;break;
+  case 'extraclear':m.attenuationColor.set(0xf3fbf8);m.attenuationDistance=6;break;
+  case 'frosted':m.roughness=0.55;m.transmission=0.82;m.attenuationColor.set(0xf2f6f5);break;
+  case 'grey':m.attenuationColor.set(0x4a5258);m.attenuationDistance=0.014;break;
+  case 'bronze':m.attenuationColor.set(0x7d5b3b);m.attenuationDistance=0.014;break;
+  case 'mirror':m.transmission=0;m.metalness=1;m.roughness=0.03;m.color.set(0xe6e8ea);break;
+ }
+ return m;
+}
+const panels=[];
+function panelMesh(d){
+ const g=new THREE.BoxGeometry(d.w,d.h,d.t/1000);
+ const mesh=new THREE.Mesh(g,makeMat(d.type,d.t)); mesh.userData={kind:'panel',id:d.id}; mesh.name=d.name;
+ mesh.castShadow=(d.type==='mirror'||d.type==='frosted'); mesh.receiveShadow=true;
+ const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat); e.userData.edge=1; mesh.add(e);
+ return mesh;
+}
+function applyPanel(p){
+ const d=p.d;
+ if(!p.mesh||p.key!==`${d.type}|${d.t}|${d.w}|${d.h}`){
+  const old=p.mesh; p.mesh=panelMesh(d); p.key=`${d.type}|${d.t}|${d.w}|${d.h}`;
+  if(old){panelG.remove(old);old.geometry.dispose();old.material.dispose(); if(tc.object===old)tc.attach(p.mesh)}
+  panelG.add(p.mesh);
+ }
+ p.mesh.rotation.order='YXZ'; p.mesh.position.fromArray(d.pos); p.mesh.rotation.set(d.rot[0]*D2R,d.rot[1]*D2R,d.rot[2]*D2R); p.mesh.name=d.name;
+ p.mesh.children[0].material=(sel&&sel.p===p)?edgeSel:edgeMat;
+}
+function addPanel(d){const p={d:{anchored:false,rot:[0,0,0],...d}};p.d.id??=uid('p');p.d.name??='لوح '+(panels.length+1);panels.push(p);applyPanel(p);return p}
+function removePanel(p){panelG.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();panels.splice(panels.indexOf(p),1)}
+const pArea=d=>d.w*d.h, pKg=d=>pArea(d)*d.t*2.5, pCost=d=>pArea(d)*priceOf(d.type,d.t);
+function syncPanelFromMesh(p){const m=p.mesh;p.d.pos=m.position.toArray().map(v=>+v.toFixed(4));const r=new THREE.Euler().setFromQuaternion(m.quaternion,'YXZ');p.d.rot=[r.x*R2D,r.y*R2D,r.z*R2D].map(v=>+v.toFixed(2))}
+function dropToSupport(p){
+ const m=p.mesh; m.updateMatrixWorld(); const b=new THREE.Box3().setFromObject(m,true); let top=0;
+ for(const o of panels){ if(o===p)continue; const ob=new THREE.Box3().setFromObject(o.mesh,true);
+  if(ob.max.x>b.min.x+0.001&&ob.min.x<b.max.x-0.001&&ob.max.z>b.min.z+0.001&&ob.min.z<b.max.z-0.001&&ob.max.y<=b.min.y+0.02) top=Math.max(top,ob.max.y);}
+ m.position.y+=top-b.min.y; syncPanelFromMesh(p);
+}
+
+/* ---------- lights ---------- */
+const lights=[];
+function addLight(d){
+ d={id:uid('l'),kind:'spot',color:'#fff4e0',intensity:1200,pos:[0,4.9,0],target:[0,0,0],angle:30,...d};
+ const g=new THREE.Group(); g.userData={kind:'light',id:d.id};
+ const L=d.kind==='spot'?new THREE.SpotLight(d.color,d.intensity,0,d.angle*D2R,0.45,2):new THREE.PointLight(d.color,d.intensity,0,2);
+ const h=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),new THREE.MeshBasicMaterial({color:d.color})); h.userData={kind:'light',id:d.id,handle:1};
+ g.add(L,h); lightG.add(g);
+ const o={d,g,L,h}; if(d.kind==='spot'){lightG.add(L.target)} lights.push(o); applyLight(o); return o;
+}
+function applyLight(o){
+ const d=o.d; o.g.position.fromArray(d.pos); o.L.color.set(d.color); o.L.intensity=d.intensity; o.h.material.color.set(d.color);
+ if(d.kind==='spot'){o.L.angle=d.angle*D2R;o.L.target.position.fromArray(d.target);o.L.target.updateMatrixWorld()}
+ const spots=lights.filter(l=>l.d.kind==='spot'); o.L.castShadow=d.kind==='spot'&&spots.indexOf(o)<4; o.L.shadow.mapSize.set(1024,1024); o.L.shadow.bias=-0.0004;
+}
+function removeLight(o){lightG.remove(o.g);if(o.L.target)lightG.remove(o.L.target);o.L.dispose();lights.splice(lights.indexOf(o),1)}
+
+/* ---------- projectors ---------- */
+const projs=[]; const media={};
+const quadGeo=new THREE.PlaneGeometry(1,1);
+function testPattern(n){
+ const c=document.createElement('canvas');c.width=640;c.height=400;const x=c.getContext('2d');
+ const cols=['#e94f37','#f6c445','#4fb286','#3a86ff','#8e5bd8','#f08ab8','#7fd6d0','#ff8c42','#c8e66a','#ffffff'];
+ x.fillStyle='#0b0b0b';x.fillRect(0,0,640,400);
+ for(let i=0;i<7;i++){x.fillStyle=cols[(i+n)%cols.length];x.fillRect(i*640/7,0,640/7+1,260)}
+ x.fillStyle='#fff';x.font='700 84px "IBM Plex Sans Arabic",sans-serif';x.textAlign='center';x.fillText('EPSON '+n,320,350);
+ x.strokeStyle='#fff';x.lineWidth=6;x.strokeRect(3,3,634,394);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+function projBody(n){
+ const g=new THREE.Group(); g.rotation.order='YXZ';
+ const mat=new THREE.MeshStandardMaterial({color:0xf1f1f0,roughness:0.5});
+ const b=new THREE.Mesh(new THREE.BoxGeometry(0.47,0.16,0.42),mat); b.castShadow=true; g.add(b);
+ const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.055,0.06,24),new THREE.MeshStandardMaterial({color:0x111111,roughness:0.2,metalness:0.4})); lens.rotation.x=Math.PI/2; lens.position.set(0.08,0,-0.23); g.add(lens);
+ const s=label('EPSON '+n,[0,0.2,0],0.35,'#ffffff','rgba(0,0,0,.6)'); g.add(s); g.userData.labelSprite=s;
+ g.traverse(o=>{if(o.isMesh)o.userData={kind:'proj'}});
+ return g;
+}
+function addProj(d){
+ const n=d?.n||(Array.from({length:10},(_,i)=>i+1).find(i=>!projs.some(p=>p.d.n===i)));
+ if(!n){toast('الحد الأقصى 10 أجهزة عرض');return null}
+ d={id:uid('j'),n,pos:[0,4.4,0],yaw:0,pitch:-15,roll:0,throw:1.6,aspect:1.6,lumens:7000,...d};
+ const body=projBody(n); body.userData={kind:'proj',id:d.id}; body.traverse(o=>{if(o.isMesh)o.userData={kind:'proj',id:d.id}}); projG.add(body);
+ const quads=[0,1,2].map(()=>{const planes=Array.from({length:10},()=>new THREE.Plane());const m=new THREE.Mesh(quadGeo,new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,clippingPlanes:planes}));m.userData.planes=planes;m.visible=false;m.name='Projection '+n;quadG.add(m);return m});
+ const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(3*2*4*3),3));
+ const beam=new THREE.LineSegments(bg,new THREE.LineBasicMaterial({color:0xfff6d8,transparent:true,opacity:.28,depthWrite:false})); beam.frustumCulled=false; helperG.add(beam);
+ const o={d,body,quads,beam,lux:0}; projs.push(o);
+ if(!media[d.id])media[d.id]={tex:testPattern(n),name:'صورة اختبار'};
+ setProjTex(o); applyProj(o); return o;
+}
+function setProjTex(o){o.quads.forEach(q=>{q.material.map=media[o.d.id].tex;q.material.needsUpdate=true})}
+function applyProj(o){const d=o.d;o.body.position.fromArray(d.pos);o.body.rotation.set(d.pitch*D2R,d.yaw*D2R,d.roll*D2R)}
+function removeProj(o){projG.remove(o.body);o.quads.forEach(q=>{quadG.remove(q);q.material.dispose()});helperG.remove(o.beam);const m=media[o.d.id];if(m?.video)m.video.pause();delete media[o.d.id];projs.splice(projs.indexOf(o),1)}
+const ray=new THREE.Raycaster(); const _m=new THREE.Matrix4();
+const ROOMPL=[[1,0,0,5.001],[-1,0,0,5.001],[0,0,1,10.001],[0,0,-1,10.001],[0,1,0,0.001],[0,-1,0,5.001]];
+const _ax=new V3(),_ay=new V3(),_c=new V3();
+function clipTo(q,obj){
+ const P=q.userData.planes; ROOMPL.forEach((r,i)=>P[i].set(_ax.set(r[0],r[1],r[2]),r[3]));
+ const g=obj.geometry?.parameters;
+ if((obj.userData.kind==='panel'||obj.userData.kind==='shard')&&g){
+  obj.updateMatrixWorld(); _c.setFromMatrixPosition(obj.matrixWorld);
+  _ax.setFromMatrixColumn(obj.matrixWorld,0).normalize(); _ay.setFromMatrixColumn(obj.matrixWorld,1).normalize();
+  const w=g.width/2+0.002,h=g.height/2+0.002;
+  P[6].set(_ax.clone(),-_ax.dot(_c)+w); P[7].set(_ax.clone().negate(),_ax.dot(_c)+w);
+  P[8].set(_ay.clone(),-_ay.dot(_c)+h); P[9].set(_ay.clone().negate(),_ay.dot(_c)+h);
+ } else for(let i=6;i<10;i++)P[i].set(_ay.set(0,1,0),1000);
+}
+function placeQuad(q,pt,n,up,dir,W,H,op,vis){
+ let y=up.clone().addScaledVector(n,-up.dot(n)); if(y.lengthSq()<1e-4){y=dir.clone().addScaledVector(n,-dir.dot(n));if(y.lengthSq()<1e-4)y.set(0,0,1)} y.normalize();
+ const x=new V3().crossVectors(y,n); _m.makeBasis(x,y,n); q.quaternion.setFromRotationMatrix(_m);
+ q.position.copy(pt).addScaledVector(n,0.004); q.scale.set(W,H,1); q.material.opacity=op; q.visible=vis&&op>0.01;
+ return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>q.position.clone().addScaledVector(x,a*W/2).addScaledVector(y,b*H/2));
+}
+function updateProj(o){
+ const targets=[...walls,roomG.children[0],...panels.map(p=>p.mesh),...shardG.children];
+ o.body.updateMatrixWorld(); const q=o.body.quaternion;
+ const origin=new V3(0.08,0,-0.26).applyMatrix4(o.body.matrixWorld), dir=new V3(0,0,-1).applyQuaternion(q).normalize(), up=new V3(0,1,0).applyQuaternion(q);
+ let travel=0,bright=1,skip=null,seg=0; const bp=o.beam.geometry.attributes.position; let bi=0; o.lux=0;
+ while(seg<3){
+  ray.set(origin,dir); ray.far=80;
+  const h=ray.intersectObjects(targets,false).find(h=>h.object!==skip&&h.distance>0.001&&(h.object.visible||h.object.userData.kind==='wall'));
+  if(!h)break;
+  travel+=h.distance; const W=travel/o.d.throw, H=W/o.d.aspect;
+  const n=h.face.normal.clone().transformDirection(h.object.matrixWorld); if(n.dot(dir)>0)n.negate();
+  const lux=o.d.lumens/(W*H); if(seg===0)o.lux=lux;
+  let op=Math.min(1,Math.max(0.18,lux/900))*bright, cont=null;
+  const pd=h.object.userData.kind==='panel'?panels.find(p=>p.mesh===h.object)?.d:null, sh=h.object.userData.shard;
+  const ty=pd?.type||sh;
+  if(ty){ if(ty==='mirror'){op*=0.05;cont='r'} else if(ty==='frosted'){op*=0.9} else {op*=(ty==='grey'||ty==='bronze')?0.07:0.12;cont='t'} }
+  clipTo(o.quads[seg],h.object); const cs=placeQuad(o.quads[seg],h.point,n,up,dir,W,H,op,h.object.visible);
+  for(const c of cs){bp.setXYZ(bi++,origin.x,origin.y,origin.z);bp.setXYZ(bi++,c.x,c.y,c.z)}
+  seg++; if(!cont)break;
+  if(cont==='r'){dir.reflect(n);up.reflect(n);bright*=0.9;skip=h.object}else{bright*=(ty==='grey'||ty==='bronze')?0.45:0.86;skip=h.object}
+  origin.copy(h.point);
+ }
+ for(let i=seg;i<3;i++)o.quads[i].visible=false;
+ bp.needsUpdate=true; o.beam.geometry.setDrawRange(0,bi); o.beam.visible=$('#beams').checked&&bi>0;
+}
+
+/* ---------- selection / transform ---------- */
+let sel=null; // {kind,p|o}
+const tc=new TransformControls(camera,canvas); scene.add(tc.getHelper());
+tc.setTranslationSnap(0.01); tc.setRotationSnap(15*D2R); tc.setSize(0.8);
+tc.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value){commitSel();pushHist()}});
+tc.addEventListener('objectChange',()=>{if(sel?.kind==='panel')syncPanelFromMesh(sel.p);else if(sel?.kind==='light'){sel.o.d.pos=sel.o.g.position.toArray();}else if(sel?.kind==='proj')syncProj(sel.o)});
+function syncProj(o){o.d.pos=o.body.position.toArray().map(v=>+v.toFixed(3));const r=new THREE.Euler().setFromQuaternion(o.body.quaternion,'YXZ');o.d.pitch=+(r.x*R2D).toFixed(1);o.d.yaw=+(r.y*R2D).toFixed(1);o.d.roll=+(r.z*R2D).toFixed(1)}
+function commitSel(){if(!sel)return;if(sel.kind==='light')applyLight(sel.o);renderProps();renderLists();if(mode==='danger')schedDanger()}
+function select(s){
+ sel=s; panels.forEach(p=>p.mesh.children[0].material=edgeMat); tc.detach();
+ if(s&&mode!=='phys'){const obj=s.kind==='panel'?s.p.mesh:s.kind==='light'?s.o.g:s.o.body;tc.attach(obj);if(s.kind==='panel')s.p.mesh.children[0].material=edgeSel;if(s.kind==='light')tc.setMode('translate')}
+ renderProps(); renderLists();
+}
+const down=new THREE.Vector2(); let downT=0;
+canvas.addEventListener('pointerdown',e=>{down.set(e.clientX,e.clientY);downT=performance.now()});
+canvas.addEventListener('pointerup',e=>{
+ if(e.button!==0||tc.dragging||down.distanceTo(new THREE.Vector2(e.clientX,e.clientY))>5)return;
+ const r=canvas.getBoundingClientRect(); const v=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+ ray.setFromCamera(v,camera); ray.far=300;
+ const objs=[...panels.map(p=>p.mesh),...lights.map(l=>l.h),...projG.children];
+ const h=ray.intersectObjects(objs,true).find(h=>h.object.visible&&!h.object.isSprite&&!h.object.userData.edge);
+ if(!h){select(null);return}
+ const k=h.object.userData.kind,id=h.object.userData.id;
+ if(k==='panel')select({kind:'panel',p:panels.find(p=>p.d.id===id)});
+ else if(k==='light')select({kind:'light',o:lights.find(l=>l.d.id===id)});
+ else if(k==='proj')select({kind:'proj',o:projs.find(p=>p.d.id===id)});
+});
+
+/* ---------- properties UI ---------- */
+const num=(k,l,v,step=1)=>`<div><label>${l}</label><input type="number" data-k="${k}" value="${v}" step="${step}"></div>`;
+function renderProps(){
+ const el=$('#props'); if(!sel){el.classList.remove('show');el.innerHTML='';return}
+ el.classList.add('show');
+ if(sel.kind==='panel'){
+  const d=sel.p.d,T=TY(d.type);
+  el.innerHTML=`<div class="row" style="justify-content:space-between;margin-top:0"><b>${esc(d.name)}</b><span class="tag ${T.src.includes(d.t)?'':'e'}">${fmt(pCost(d))} ₪</span></div>
+  <div class="grid2"><div><label>النوع</label><select data-k="type">${TYPES.map(t=>`<option value="${t.id}" ${t.id===d.type?'selected':''}>${t.ar}</option>`).join('')}</select></div>
+  <div><label>السماكة</label><select data-k="t">${T.th.map(t=>`<option value="${t}" ${t===d.t?'selected':''}>${thLabel(d.type,t)}</option>`).join('')}</select></div></div>
+  <div class="grid2" style="margin-top:6px">${num('w','العرض (سم)',+(d.w*100).toFixed(1))}${num('h','الارتفاع (سم)',+(d.h*100).toFixed(1))}</div>
+  <div class="grid3" style="margin-top:6px">${num('x','X (سم)',+(d.pos[0]*100).toFixed(1))}${num('y','Y ارتفاع (سم)',+(d.pos[1]*100).toFixed(1))}${num('z','Z (سم)',+(d.pos[2]*100).toFixed(1))}</div>
+  <div class="grid3" style="margin-top:6px">${num('rx','ميلان °',+d.rot[0].toFixed(1),5)}${num('ry','اتجاه °',+d.rot[1].toFixed(1),5)}${num('rz','دوران °',+d.rot[2].toFixed(1),5)}</div>
+  <label class="chk"><input type="checkbox" data-k="anchored" ${d.anchored?'checked':''}> مثبّت بكلبسات/براغي</label>
+  <div class="stat"><span>المساحة</span><b>${fmt(pArea(d),2)} م²</b></div><div class="stat"><span>الوزن</span><b>${fmt(pKg(d),1)} كغ</b></div>
+  ${(Math.max(d.w,d.h)>6||Math.min(d.w,d.h)>3.21)?'<p class="note" style="color:var(--amber)">أكبر من لوح جامبو 6000×3210 مم: لا يُصنع قطعة واحدة.</p>':''}
+  <div class="row"><button data-a="move">تحريك (T)</button><button data-a="rot">تدوير (R)</button><button data-a="drop">إنزال للسند</button><button data-a="flat">أفقي</button><button data-a="up">واقف</button><button data-a="dup">نسخ</button><button data-a="del" class="warn">حذف</button></div>`;
+ } else if(sel.kind==='light'){
+  const d=sel.o.d;
+  el.innerHTML=`<b>${d.kind==='spot'?'سبوت':'مصباح نقطي'}</b>
+  <div class="grid2" style="margin-top:6px"><div><label>اللون</label><input type="color" data-k="color" value="${d.color}" style="width:100%;height:36px;background:none;border:0"></div>${num('intensity',d.kind==='spot'?'الشدة (كانديلا)':'الشدة (كانديلا)',d.intensity,50)}</div>
+  <div class="grid3" style="margin-top:6px">${num('x','X (سم)',+(d.pos[0]*100).toFixed(0))}${num('y','Y (سم)',+(d.pos[1]*100).toFixed(0))}${num('z','Z (سم)',+(d.pos[2]*100).toFixed(0))}</div>
+  ${d.kind==='spot'?`<label style="margin-top:6px">نقطة التصويب (سم)</label><div class="grid3">${num('tx','X',+(d.target[0]*100).toFixed(0))}${num('ty','Y',+(d.target[1]*100).toFixed(0))}${num('tz','Z',+(d.target[2]*100).toFixed(0))}</div>${num('angle','زاوية الإنارة °',d.angle,1)}`:''}
+  <div class="row"><button data-a="aim">صوّب على اللوح الأقرب</button><button data-a="del" class="warn">حذف</button></div>`;
+ } else {
+  const o=sel.o,d=o.d,m=media[d.id];
+  el.innerHTML=`<div class="row" style="justify-content:space-between;margin-top:0"><b>Epson ${d.n}</b><span class="tag">≈ ${fmt(o.lux)} لوكس</span></div>
+  <label>الصورة أو الفيديو</label><input type="file" accept="image/*,video/mp4,video/webm" data-k="media" style="width:100%;margin:4px 0">
+  <div class="note" id="mName"></div>
+  <div class="grid3">${num('throw','نسبة الرمي',d.throw,0.05)}${num('lumens','لومن',d.lumens,500)}<div><label>نسبة الأبعاد</label><select data-k="aspect">${[[1.6,'16:10'],[16/9,'16:9'],[4/3,'4:3']].map(([v,l])=>`<option value="${v}" ${Math.abs(v-d.aspect)<0.01?'selected':''}>${l}</option>`).join('')}</select></div></div>
+  <div class="grid3" style="margin-top:6px">${num('x','X (سم)',+(d.pos[0]*100).toFixed(0))}${num('y','Y (سم)',+(d.pos[1]*100).toFixed(0))}${num('z','Z (سم)',+(d.pos[2]*100).toFixed(0))}</div>
+  <div class="grid3" style="margin-top:6px">${num('yaw','اتجاه °',d.yaw,5)}${num('pitch','ميل °',d.pitch,1)}${num('roll','دوران °',d.roll,1)}</div>
+  <div class="row"><button data-a="move">تحريك</button><button data-a="rot">تدوير</button><button data-a="dup">نسخ</button><button data-a="del" class="warn">حذف</button></div>
+  <p class="note">نسبة الرمي = المسافة ÷ عرض الصورة. معظم أجهزة Epson للتركيب بين 1.3 و2.2 بالعدسة القياسية، تحقق من مواصفات طرازك.</p>`;
+  $('#mName').textContent='الحالي: '+(m?.name||'—');
+ }
+}
+$('#props').addEventListener('change',e=>{
+ const k=e.target.dataset.k; if(!k||!sel)return; const v=e.target.type==='checkbox'?e.target.checked:e.target.value;
+ if(sel.kind==='panel'){const p=sel.p,d=p.d;
+  if(k==='type'){d.type=v;const T=TY(v);if(!T.th.includes(d.t))d.t=T.th.reduce((a,b)=>Math.abs(b-d.t)<Math.abs(a-d.t)?b:a)}
+  else if(k==='t')d.t=+v; else if(k==='w')d.w=Math.max(0.02,v/100); else if(k==='h')d.h=Math.max(0.02,v/100);
+  else if(k==='x'||k==='y'||k==='z')d.pos['xyz'.indexOf(k)]=v/100; else if(k[0]==='r'&&k.length===2)d.rot['xyz'.indexOf(k[1])]=+v; else if(k==='anchored')d.anchored=v;
+  applyPanel(p); if(tc.object!==p.mesh&&mode!=='phys')tc.attach(p.mesh);
+ } else if(sel.kind==='light'){const d=sel.o.d;
+  if(k==='color')d.color=v; else if(k==='intensity')d.intensity=+v; else if(k==='angle')d.angle=Math.min(85,Math.max(3,+v));
+  else if('xyz'.includes(k))d.pos['xyz'.indexOf(k)]=v/100; else if(k[0]==='t')d.target['xyz'.indexOf(k[1])]=v/100;
+  applyLight(sel.o);
+ } else {const o=sel.o,d=o.d;
+  if(k==='media'){loadMedia(o,e.target.files[0]);return}
+  if(k==='throw')d.throw=Math.max(0.2,+v); else if(k==='lumens')d.lumens=Math.max(100,+v); else if(k==='aspect')d.aspect=+v;
+  else if('xyz'.includes(k))d.pos['xyz'.indexOf(k)]=v/100; else d[k]=+v;
+  applyProj(o);
+ }
+ renderProps(); renderLists(); pushHist(); if(mode==='danger')schedDanger();
+});
+$('#props').addEventListener('click',e=>{
+ const a=e.target.dataset.a; if(!a||!sel)return;
+ if(a==='move')tc.setMode('translate'); if(a==='rot')tc.setMode('rotate');
+ if(a==='del')delSel();
+ if(a==='dup')dupSel();
+ if(sel?.kind==='panel'){const p=sel.p;
+  if(a==='drop'){dropToSupport(p);applyPanel(p)}
+  if(a==='flat'){p.d.rot=[-90,p.d.rot[1],0];applyPanel(p);dropToSupport(p);applyPanel(p)}
+  if(a==='up'){p.d.rot=[0,p.d.rot[1],0];applyPanel(p);dropToSupport(p);applyPanel(p)}
+  if(['drop','flat','up'].includes(a)){renderProps();pushHist();if(mode==='danger')schedDanger()}
+ }
+ if(a==='aim'&&sel?.kind==='light'){const lp=new V3(...sel.o.d.pos);let best=null,bd=1e9;panels.forEach(p=>{const dd=p.mesh.position.distanceTo(lp);if(dd<bd){bd=dd;best=p}});if(best){sel.o.d.target=best.mesh.position.toArray();applyLight(sel.o);renderProps();pushHist()}}
+});
+function delSel(){if(!sel||mode==='phys')return;tc.detach();if(sel.kind==='panel')removePanel(sel.p);else if(sel.kind==='light')removeLight(sel.o);else removeProj(sel.o);select(null);pushHist();if(mode==='danger')schedDanger()}
+function dupSel(){if(!sel||mode==='phys')return;
+ if(sel.kind==='panel'){const d=JSON.parse(JSON.stringify(sel.p.d));delete d.id;d.name=undefined;const off=new V3(d.w+0.15,0,0).applyEuler(new THREE.Euler(0,d.rot[1]*D2R,0));d.pos=[d.pos[0]+off.x,d.pos[1],d.pos[2]+off.z];select({kind:'panel',p:addPanel(d)})}
+ else if(sel.kind==='proj'){const d=JSON.parse(JSON.stringify(sel.o.d));delete d.id;delete d.n;d.pos[0]+=0.8;const o=addProj(d);if(o)select({kind:'proj',o})}
+ else{const d=JSON.parse(JSON.stringify(sel.o.d));delete d.id;d.pos[0]+=1;select({kind:'light',o:addLight(d)})}
+ pushHist();
+}
+function loadMedia(o,f){
+ if(!f)return; const url=URL.createObjectURL(f); const old=media[o.d.id]; if(old?.video){old.video.pause()} if(old?.url)URL.revokeObjectURL(old.url);
+ if(f.type.startsWith('video')){
+  const v=document.createElement('video');v.src=url;v.loop=true;v.muted=true;v.playsInline=true;v.crossOrigin='anonymous';v.play().catch(()=>{});
+  const t=new THREE.VideoTexture(v);t.colorSpace=THREE.SRGBColorSpace;media[o.d.id]={tex:t,video:v,url,name:f.name};
+ } else {
+  const t=new THREE.TextureLoader().load(url);t.colorSpace=THREE.SRGBColorSpace;media[o.d.id]={tex:t,url,name:f.name};
+ }
+ setProjTex(o); renderProps(); renderLists(); toast('تم تحميل '+f.name);
+}
+
+/* ---------- lists / HUD ---------- */
+let issues=new Map();
+function renderLists(){
+ $('#pList').innerHTML=panels.length?panels.map(p=>{const d=p.d,is=issues.get(d.id);return `<div class="item ${sel?.p===p?'sel':''} ${is?(is.lvl==='r'?'bad':'mid'):''}" data-id="${d.id}"><span>${esc(d.name)} · ${TY(d.type).ar}</span><small>${fmt(d.w*100)}×${fmt(d.h*100)} · ${thLabel(d.type,d.t)}${d.anchored?' · مثبّت':''}</small></div>`}).join(''):'<p class="note">لا توجد ألواح بعد.</p>';
+ $('#lList').innerHTML=lights.map((l,i)=>`<div class="item ${sel?.o===l?'sel':''}" data-l="${l.d.id}"><span>${l.d.kind==='spot'?'سبوت':'نقطي'} ${i+1}${l.L.castShadow?' · ظل':''}</span><small>${fmt(l.d.intensity)} cd</small></div>`).join('');
+ $('#jList').innerHTML=projs.slice().sort((a,b)=>a.d.n-b.d.n).map(o=>`<div class="item ${sel?.o===o?'sel':''}" data-j="${o.d.id}"><span>Epson ${o.d.n}</span><small>${esc(media[o.d.id]?.name||'')} · ${fmt(o.d.lumens)} lm</small></div>`).join('');
+ const A=panels.reduce((s,p)=>s+pArea(p.d),0),K=panels.reduce((s,p)=>s+pKg(p.d),0),C=panels.reduce((s,p)=>s+pCost(p.d),0);
+ $('#hud').innerHTML=`<div><span>ألواح</span><b>${panels.length}</b></div><div><span>مساحة الزجاج</span><b>${fmt(A,2)} م²</b></div><div><span>الوزن الكلي</span><b>${fmt(K)} كغ</b></div><div><span>تكلفة تقديرية</span><b>${fmt(C)} ₪</b></div><div><span>أجهزة عرض</span><b>${projs.length}/10</b></div>`;
+}
+$('#pList').addEventListener('click',e=>{const it=e.target.closest('[data-id]');if(it)select({kind:'panel',p:panels.find(p=>p.d.id===it.dataset.id)})});
+$('#lList').addEventListener('click',e=>{const it=e.target.closest('[data-l]');if(it)select({kind:'light',o:lights.find(p=>p.d.id===it.dataset.l)})});
+$('#jList').addEventListener('click',e=>{const it=e.target.closest('[data-j]');if(it)select({kind:'proj',o:projs.find(p=>p.d.id===it.dataset.j)})});
+
+/* add panel form */
+fillTypes($('#aType')); $('#aType').value='tempered'; fillTh($('#aTh'),'tempered',10);
+$('#aType').onchange=()=>fillTh($('#aTh'),$('#aType').value,$('#aTh').value);
+$('#aSize').onchange=()=>{$('#aCustom').style.display=$('#aSize').value==='c'?'grid':'none'};
+let addN=0;
+$('#bAdd').onclick=()=>{
+ if(mode==='phys')return toast('أوقف الفيزياء أولًا');
+ let [w,h]=$('#aSize').value==='c'?[+$('#aW').value,+$('#aH').value]:$('#aSize').value.split('x').map(Number); w/=100;h/=100;
+ const ori=$('#aOri').value, t=+$('#aTh').value; const x=-3+(addN%7),z=-6+Math.floor(addN/7)%8*1.5; addN++;
+ const d={type:$('#aType').value,t,w,h,anchored:$('#aAnch').checked,pos:[x,0,z],rot:ori==='f'?[-90,0,0]:[0,ori==='s90'?90:0,0]};
+ const p=addPanel(d); dropToSupport(p); applyPanel(p); select({kind:'panel',p}); pushHist(); if(mode==='danger')schedDanger();
+};
+$('#bNew').onclick=()=>{if(mode==='phys')return;[...panels].forEach(removePanel);select(null);pushHist();toast('تم مسح الألواح (الإضاءة وأجهزة العرض باقية)')};
+$('#bSpot').onclick=()=>{select({kind:'light',o:addLight({kind:'spot',pos:[0,4.9,0],target:[0,0,0]})});pushHist()};
+$('#bPoint').onclick=()=>{select({kind:'light',o:addLight({kind:'point',intensity:150,pos:[0,3,0]})});pushHist()};
+$('#bProj').onclick=()=>{const o=addProj({pos:[-4+projs.length*0.9,4.4,-8],yaw:180});if(o){select({kind:'proj',o});pushHist()}};
+$('#bPlay').onclick=()=>{Object.values(media).forEach(m=>m.video&&m.video.play().catch(()=>{}))};
+$('#beams').onchange=()=>{};
+$('#amb').oninput=e=>{const v=+e.target.value;hemi.intensity=v;scene.environmentIntensity=v};
+$('#expo').oninput=e=>{renderer.toneMappingExposure=+e.target.value};
+$('#dark').onchange=e=>{const on=e.target.checked;$('#amb').value=on?0.03:0.45;$('#amb').oninput({target:$('#amb')});lights.forEach(l=>{l.L.visible=!on})};
+$('#ceil').onchange=()=>{};
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('section.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+b.dataset.tab))});
+$$('.views button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+/* catalogue table */
+function renderCat(){
+ $('#catTbl').innerHTML=TYPES.map(T=>`<h3>${T.ar} <span class="note">${T.he}</span></h3><table><thead><tr><th>السماكة</th><th>كغ/م²</th><th>₪/م²</th><th></th></tr></thead><tbody>${T.th.map(t=>`<tr><td>${thLabel(T.id,t)}</td><td>${fmt(t*2.5,1)}</td><td><input type="number" data-pk="${T.id}|${t}" value="${priceOf(T.id,t)}" step="10"></td><td><span class="tag ${T.src.includes(t)?'':'e'}">${T.src.includes(t)?'مصدر':'تقدير'}</span></td></tr>`).join('')}</tbody></table>`).join('')+`<p class="note">مصدر أسعار المقسّى والمرآة: <a href="https://www.midrag.co.il/Content/Price/28688" style="color:var(--glass)">ميدراج، زجاج مقسّى حسب الطلب</a> و<a href="https://www.midrag.co.il/Content/Tip/20373" style="color:var(--glass)">ميدراج، مرايا</a>. الأسعار تشمل غالبًا القص والتركيب؛ سعر اللوح الخام من المصنع أقل.</p>`;
+}
+$('#catTbl').addEventListener('change',e=>{const k=e.target.dataset.pk;if(!k)return;priceOv[k]=+e.target.value;try{localStorage.setItem('gs_prices',JSON.stringify(priceOv))}catch(_){}fillTh($('#aTh'),$('#aType').value,$('#aTh').value);renderLists();renderProps()});
+renderCat();
+
+/* ---------- history / persistence ---------- */
+const ser=()=>JSON.stringify({v:1,panels:panels.map(p=>p.d),lights:lights.map(l=>l.d),projs:projs.map(o=>o.d)});
+function restore(s){
+ const st=typeof s==='string'?JSON.parse(s):s; tc.detach(); sel=null;
+ [...panels].forEach(removePanel); [...lights].forEach(removeLight);
+ const keep={...media}; [...projs].forEach(o=>{projG.remove(o.body);o.quads.forEach(q=>quadG.remove(q));helperG.remove(o.beam);projs.splice(projs.indexOf(o),1)});
+ Object.assign(media,keep);
+ (st.panels||[]).forEach(d=>addPanel(d)); (st.lights||[]).forEach(d=>addLight(d)); (st.projs||[]).forEach(d=>addProj(d));
+ renderProps(); renderLists();
+}
+let hist=[]; let saveT=0;
+function pushHist(){const s=ser();if(hist[hist.length-1]!==s){hist.push(s);if(hist.length>80)hist.shift()}clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('gs_project',s)}catch(e){}},400);renderLists()}
+function undo(){if(mode==='phys'||hist.length<2)return;hist.pop();restore(hist[hist.length-1]);if(mode==='danger')schedDanger();toast('تراجع')}
+
+/* ---------- physics ---------- */
+function buildWorld(){
+ const w=new CANNON.World({gravity:new CANNON.Vec3(0,-9.81,0)}); w.broadphase=new CANNON.SAPBroadphase(w); w.solver.iterations=30; w.allowSleep=false;
+ w.defaultContactMaterial.contactEquationStiffness=5e7; w.defaultContactMaterial.contactEquationRelaxation=3;
+ const gm=new CANNON.Material('glass'),fm=new CANNON.Material('floor');
+ w.addContactMaterial(new CANNON.ContactMaterial(gm,fm,{friction:0.5,restitution:0.04}));
+ w.addContactMaterial(new CANNON.ContactMaterial(gm,gm,{friction:0.4,restitution:0.04}));
+ const fl=new CANNON.Body({mass:0,material:fm}); fl.addShape(new CANNON.Plane()); fl.quaternion.setFromEuler(-Math.PI/2,0,0); w.addBody(fl);
+ const wb=(x,y,z,hx,hy,hz)=>{const b=new CANNON.Body({mass:0,material:fm});b.addShape(new CANNON.Box(new CANNON.Vec3(hx,hy,hz)));b.position.set(x,y,z);w.addBody(b)};
+ wb(0,2.5,-10.5,6,3,0.5);wb(0,2.5,10.5,6,3,0.5);wb(-5.5,2.5,0,0.5,3,11);wb(5.5,2.5,0,0.5,3,11);wb(0,5.5,0,6,0.5,11);
+ const list=panels.map(p=>{const d=p.d;const b=new CANNON.Body({mass:d.anchored?0:2500*d.w*d.h*d.t/1000,material:gm,linearDamping:0.01,angularDamping:0.02});
+  b.addShape(new CANNON.Box(new CANNON.Vec3(d.w/2,d.h/2,Math.max(d.t/2000,0.006))));b.position.copy(p.mesh.position);b.quaternion.copy(p.mesh.quaternion);w.addBody(b);return {p,b}});
+ return {w,gm,list};
+}
+function analyze(){
+ const res=new Map(), F=60;
+ for(const sign of [0,1,-1]){
+  const W=buildWorld(); const dyn=W.list.filter(o=>o.b.mass>0); const st=dyn.map(o=>({p:o.b.position.clone(),q:o.b.quaternion.clone(),imp:0}));
+  dyn.forEach((o,i)=>o.b.addEventListener('collide',e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>st[i].imp)st[i].imp=v}));
+  for(let s=0;s<360;s++){
+   if(sign&&s<60)dyn.forEach(o=>{const b=o.b;const upv=b.quaternion.vmult(new CANNON.Vec3(0,1,0));if(Math.abs(upv.y)<0.7)return;
+    const n=b.quaternion.vmult(new CANNON.Vec3(0,0,sign));const top=b.quaternion.vmult(new CANNON.Vec3(0,o.p.d.h/2,0));b.applyForce(n.scale(F),top)});
+   W.w.step(1/240);
+  }
+  dyn.forEach((o,i)=>{
+   const dv=o.b.position.vsub(st[i].p), d=dv.length(), q=o.b.quaternion, q0=st[i].q;
+   const dot=Math.min(1,Math.abs(q.x*q0.x+q.y*q0.y+q.z*q0.z+q.w*q0.w)), ang=2*Math.acos(dot)*R2D;
+   const r=res.get(o.p.d.id)||{p:o.p,d:0,ang:0,imp:0,grav:false,dir:new V3()};
+   if(d>r.d||ang>r.ang){r.dir.set(dv.x,0,dv.z)} r.d=Math.max(r.d,d); r.ang=Math.max(r.ang,ang); r.imp=Math.max(r.imp,st[i].imp);
+   if(sign===0&&(d>0.01||ang>2))r.grav=true; res.set(o.p.d.id,r);
+  });
+ }
+ return res;
+}
+let dangerT=0; function schedDanger(){clearTimeout(dangerT);dangerT=setTimeout(showDanger,250)}
+function clearDanger(){dangerG.clear();issues=new Map();panels.forEach(p=>{p.mesh.material.emissive?.set(0);});$('#issues').innerHTML='';renderLists()}
+function showDanger(){
+ clearDanger(); const res=analyze(); const out=[];
+ for(const p of panels){
+  const d=p.d, r=res.get(d.id), msgs=[]; let lvl=null;
+  const b=new THREE.Box3().setFromObject(p.mesh,true);
+  if(b.min.x<-5.001||b.max.x>5.001||b.min.z<-10.001||b.max.z>10.001||b.max.y>5.001||b.min.y<-0.001){msgs.push('يخترق حدود الحيّز (جدار/أرض/سقف)');lvl='r'}
+  if(Math.max(d.w,d.h)>6||Math.min(d.w,d.h)>3.21){msgs.push('أكبر من لوح جامبو، لا يُصنع قطعة واحدة');lvl=lvl||'o'}
+  if(r){
+   if(r.grav){msgs.push(r.d>0.15||r.ang>20?'يسقط بفعل وزنه وحده':'يتحرك/ينزلق تحت وزنه');lvl='r'}
+   else if(r.d>0.01||r.ang>2){msgs.push(`ينقلب بدفعة خفيفة (${F_TXT}): يحتاج تثبيت أو دعامة`);lvl=r.ang>20?'r':(lvl==='r'?'r':'o')}
+   if(r.imp>TY(d.type).brk){msgs.push(`ضربة ≈ ${r.imp.toFixed(1)} م/ث عند السقوط: ${d.type==='laminated'?'يتشقق (يبقى متماسكًا)':'ينكسر'}`);lvl='r'}
+  }
+  if(!msgs.length)continue;
+  issues.set(d.id,{lvl}); p.mesh.material.emissive.set(lvl==='r'?0xff3020:0xff9a20); p.mesh.material.emissiveIntensity=0.35;
+  const top=new V3((b.min.x+b.max.x)/2,b.max.y+0.35,(b.min.z+b.max.z)/2);
+  dangerG.add(label('!  '+fmt(pKg(d))+' كغ',top.toArray(),0.55,'#fff',lvl==='r'?'rgba(220,50,30,.92)':'rgba(220,140,20,.92)'));
+  if(r&&r.dir.lengthSq()>1e-6){const c=new V3((b.min.x+b.max.x)/2,(b.min.y+b.max.y)/2,(b.min.z+b.max.z)/2);dangerG.add(new THREE.ArrowHelper(r.dir.clone().normalize(),c,Math.min(2,0.6+r.d),lvl==='r'?0xff4030:0xffa030,0.25,0.15))}
+  out.push({p,lvl,msgs});
+ }
+ const html=out.length?`<h3>نقاط الخطر (${out.length})</h3>`+out.sort((a,b)=>a.lvl<b.lvl?1:-1).map(o=>`<div class="issue ${o.lvl}" data-id="${o.p.d.id}"><b>${esc(o.p.d.name)}</b> · ${fmt(pKg(o.p.d))} كغ<br>${o.msgs.map(esc).join('<br>')}</div>`).join(''):'<h3>نقاط الخطر</h3><p class="note" style="color:var(--glass)">لا توجد نقاط خطر: كل الألواح مستقرة تحت الجاذبية ودفعة خفيفة.</p>';
+ $('#issues').innerHTML=html+`<p class="note">الاختبار: محاكاة 1.5 ث بالجاذبية، ثم دفعة ${F_TXT} على أعلى كل لوح واقف من الجهتين. الألواح المثبّتة تُعامل كأنها مربوطة. هذا تقدير بصري وليس حسابًا هندسيًا معتمدًا.</p>`;
+ renderLists();
+}
+const F_TXT='60 نيوتن ≈ لمسة يد';
+$('#issues').addEventListener('click',e=>{const it=e.target.closest('[data-id]');if(it){const p=panels.find(p=>p.d.id===it.dataset.id);if(p)select({kind:'panel',p})}});
+
+let live=null, snapshot=null, shatterQ=[];
+function shatter(o){
+ const d=o.p.d,b=o.b,t=d.t/1000; o.broken=true;
+ if(d.type==='laminated'){o.p.mesh.material.roughness=0.35;o.p.mesh.material.transmission=0.75;toast(d.name+': تشقق المصفّح وبقي متماسكًا');return}
+ if(shardG.children.length>420)return;
+ let rects=[];
+ if(d.type==='mirror'||d.type==='float'){rects=[[-d.w/2,-d.h/2,d.w,d.h]];for(let i=0;i<9;i++){rects.sort((a,b)=>b[2]*b[3]-a[2]*a[3]);const [x,y,w,h]=rects.shift();const f=0.3+Math.random()*0.4;if(w>h)rects.push([x,y,w*f,h],[x+w*f,y,w*(1-f),h]);else rects.push([x,y,w,h*f],[x,y+h*f,w,h*(1-f)])}}
+ else{const nx=Math.max(2,Math.round(d.w/0.18)),ny=Math.max(2,Math.round(d.h/0.18));const sx=Math.min(nx,8),sy=Math.min(ny,10);for(let i=0;i<sx;i++)for(let j=0;j<sy;j++)rects.push([-d.w/2+i*d.w/sx,-d.h/2+j*d.h/sy,d.w/sx,d.h/sy])}
+ const mat=o.p.mesh.material; if(d.type==='tempered'||d.type==='extraclear'){mat.roughness=0.25}
+ for(const [x,y,w,h] of rects){
+  const g=new THREE.BoxGeometry(w*0.98,h*0.98,t); const m=new THREE.Mesh(g,mat); m.userData={kind:'shard',shard:d.type};
+  const lp=new CANNON.Vec3(x+w/2,y+h/2,0); const wp=b.quaternion.vmult(lp).vadd(b.position);
+  const sb=new CANNON.Body({mass:2500*w*h*t,material:live.gm}); sb.addShape(new CANNON.Box(new CANNON.Vec3(w*0.49,h*0.49,Math.max(t/2,0.006))));
+  sb.position.copy(wp); sb.quaternion.copy(b.quaternion);
+  const r=b.quaternion.vmult(lp); sb.velocity.copy(b.velocity.vadd(b.angularVelocity.cross(r))); sb.velocity.x+=(Math.random()-.5)*0.8; sb.velocity.y+=Math.random()*0.6; sb.velocity.z+=(Math.random()-.5)*0.8;
+  sb.angularVelocity.set((Math.random()-.5)*4,(Math.random()-.5)*4,(Math.random()-.5)*4);
+  live.w.addBody(sb); m.userData.body=sb; shardG.add(m);
+ }
+ live.w.removeBody(b); o.p.mesh.visible=false;
+}
+function startPhys(){
+ snapshot=ser(); live=buildWorld(); shatterQ=[];
+ live.list.forEach(o=>{if(o.b.mass>0)o.b.addEventListener('collide',e=>{const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(!o.broken&&!o.q&&v>TY(o.p.d.type).brk){o.q=1;shatterQ.push(o)}})});
+ live.list.forEach(o=>{if(o.b.mass>0){o.b.angularVelocity.set((Math.random()-.5)*0.3,0,(Math.random()-.5)*0.3)}});
+}
+function stopPhys(){
+ live=null; shardG.children.slice().forEach(m=>{m.geometry.dispose();shardG.remove(m)}); if(snapshot)restore(snapshot); snapshot=null;
+}
+
+/* ---------- modes ---------- */
+let mode='build';
+function setMode(m){
+ if(m===mode&&m!=='danger')return;
+ if(mode==='phys'&&m!=='phys')stopPhys();
+ if(mode==='danger'&&m!=='danger')clearDanger();
+ mode=m; $$('.mode').forEach(b=>b.classList.toggle('on',b.id==={build:'mBuild',danger:'mDanger',phys:'mPhys'}[m]));
+ const note=$('#modeNote');
+ if(m==='phys'){select(null);startPhys();note.style.display='block';note.innerHTML='الفيزياء تعمل: الألواح لها وزن حقيقي وتسقط وتنكسر عند الاصطدام القوي. <button id="bStop" style="margin-top:6px;width:100%">إيقاف وإرجاع النموذج</button>';$('#bStop').onclick=()=>setMode('build')}
+ else if(m==='danger'){note.style.display='block';note.textContent='وضع نقاط الخطر: تتحدّث تلقائيًا بعد كل تعديل.';showDanger()}
+ else{note.style.display='none'}
+}
+$('#mBuild').onclick=()=>setMode('build'); $('#mDanger').onclick=()=>setMode('danger'); $('#mPhys').onclick=()=>setMode(mode==='phys'?'build':'phys');
+
+/* ---------- cutter ---------- */
+const cut={type:'float',t:6,W:3210,H:2250,root:null,sel:null,tool:'sel',hist:[],hover:null};
+const cv=$('#cutCv'), cx=cv.getContext('2d');
+fillTypes($('#cType')); $('#cType').value='float'; fillTh($('#cTh'),'float',6);
+function cutReset(){cut.root={x:0,y:0,w:cut.W,h:cut.H,ch:null,waste:false};cut.sel=cut.root;cut.hist=[];drawCut()}
+const leaves=(n,a=[])=>{if(n.ch)n.ch.forEach(c=>leaves(c,a));else a.push(n);return a};
+function cutSnap(){cut.hist.push(JSON.stringify(cut.root));if(cut.hist.length>60)cut.hist.shift()}
+function relink(n){return n}
+function split(n,dirV,at){
+ at=Math.round(at); const len=dirV?n.w:n.h; if(at<20||at>len-20){toast('القص قريب جدًا من الحافة');return false}
+ cutSnap(); n.ch=dirV?[{x:n.x,y:n.y,w:at,h:n.h,ch:null},{x:n.x+at,y:n.y,w:n.w-at,h:n.h,ch:null}]:[{x:n.x,y:n.y,w:n.w,h:at,ch:null},{x:n.x,y:n.y+at,w:n.w,h:n.h-at,ch:null}];
+ cut.sel=n.ch[0]; drawCut(); return true;
+}
+let cvT={s:1,ox:0,oy:0};
+function drawCut(){
+ const r=cv.getBoundingClientRect(),dpr=Math.min(devicePixelRatio,2); cv.width=r.width*dpr; cv.height=r.height*dpr; cx.setTransform(dpr,0,0,dpr,0,0);
+ cx.fillStyle='#0f1114';cx.fillRect(0,0,r.width,r.height);cx.direction='ltr';
+ const m=48, s=Math.min((r.width-2*m)/cut.W,(r.height-2*m)/cut.H); cvT={s,ox:(r.width-cut.W*s)/2,oy:(r.height-cut.H*s)/2};
+ const X=v=>cvT.ox+v*s, Y=v=>cvT.oy+v*s;
+ cx.fillStyle='#e9edf0';cx.font='13px "IBM Plex Sans Arabic",sans-serif';cx.textAlign='center';
+ cx.fillText(`${cut.W} مم`,X(cut.W/2),Y(0)-14); cx.save();cx.translate(X(0)-16,Y(cut.H/2));cx.rotate(-Math.PI/2);cx.fillText(`${cut.H} مم`,0,0);cx.restore();
+ for(const n of leaves(cut.root)){
+  cx.fillStyle=n.waste?'#2a2c2f':(n===cut.sel?'rgba(143,227,220,.42)':'rgba(143,227,220,.16)'); cx.fillRect(X(n.x),Y(n.y),n.w*s,n.h*s);
+  if(n.waste){cx.save();cx.beginPath();cx.rect(X(n.x),Y(n.y),n.w*s,n.h*s);cx.clip();cx.strokeStyle='#4a4e53';for(let k=-n.h*s;k<n.w*s;k+=10){cx.beginPath();cx.moveTo(X(n.x)+k,Y(n.y)+n.h*s);cx.lineTo(X(n.x)+k+n.h*s,Y(n.y));cx.stroke()}cx.restore()}
+  cx.strokeStyle=n===cut.sel?'#8fe3dc':'#5d8f8b';cx.lineWidth=n===cut.sel?2:1;cx.strokeRect(X(n.x)+.5,Y(n.y)+.5,n.w*s-1,n.h*s-1);
+  if(n.w*s>56&&n.h*s>22){cx.fillStyle=n.waste?'#8a8f95':'#e9edf0';cx.fillText(`${n.w}×${n.h}`,X(n.x+n.w/2),Y(n.y+n.h/2)+5)}
+ }
+ if(cut.hover&&cut.tool!=='sel'){const {n,at}=cut.hover;cx.strokeStyle='#ff5a44';cx.setLineDash([6,4]);cx.lineWidth=2;cx.beginPath();
+  if(cut.tool==='v'){cx.moveTo(X(n.x+at),Y(n.y));cx.lineTo(X(n.x+at),Y(n.y+n.h))}else{cx.moveTo(X(n.x),Y(n.y+at));cx.lineTo(X(n.x+n.w),Y(n.y+at))}
+  cx.stroke();cx.setLineDash([]);cx.fillStyle='#ff5a44';cx.fillText(`${at} مم`,cut.tool==='v'?X(n.x+at):X(n.x+n.w/2),cut.tool==='v'?Y(n.y)-6:Y(n.y+at)-6)}
+ const L=leaves(cut.root),use=L.filter(n=>!n.waste),A=cut.W*cut.H/1e6,U=use.reduce((s,n)=>s+n.w*n.h,0)/1e6,price=priceOf(cut.type,cut.t);
+ $('#cStats').innerHTML=[['مساحة اللوح الخام',fmt(A,2)+' م²'],['وزن اللوح',fmt(A*cut.t*2.5)+' كغ'],['سعر اللوح ('+price+' ₪/م²)',fmt(A*price)+' ₪'],['عدد القطع المفيدة',use.length],['المستغل',fmt(U/A*100)+'%'],['الهدر',fmt((A-U),2)+' م²']].map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
+ $('#cSel').textContent=cut.sel&&!cut.sel.ch?`القطعة المحددة: ${cut.sel.w} × ${cut.sel.h} مم · ${fmt(cut.sel.w*cut.sel.h/1e6*cut.t*2.5,1)} كغ${cut.sel.waste?' · هدر':''}`:'';
+}
+function cutHit(e){const r=cv.getBoundingClientRect();const mx=(e.clientX-r.left-cvT.ox)/cvT.s,my=(e.clientY-r.top-cvT.oy)/cvT.s;const n=leaves(cut.root).find(n=>mx>=n.x&&mx<=n.x+n.w&&my>=n.y&&my<=n.y+n.h);return n?{n,mx,my}:null}
+cv.addEventListener('pointermove',e=>{const h=cutHit(e);if(!h||cut.tool==='sel'){cut.hover=null}else{const raw=cut.tool==='v'?h.mx-h.n.x:h.my-h.n.y;cut.hover={n:h.n,at:Math.round(raw/5)*5}}drawCut()});
+cv.addEventListener('pointerleave',()=>{cut.hover=null;drawCut()});
+cv.addEventListener('click',e=>{const h=cutHit(e);if(!h)return;if(cut.tool==='sel'){cut.sel=h.n;drawCut();return}const at=Math.round((cut.tool==='v'?h.mx-h.n.x:h.my-h.n.y)/5)*5;split(h.n,cut.tool==='v',at)});
+$$('#cTool button').forEach(b=>b.onclick=()=>{cut.tool=b.dataset.t;$$('#cTool button').forEach(x=>x.classList.toggle('on',x===b))});
+$('#cDoV').onclick=()=>{if(cut.sel&&!cut.sel.ch)split(cut.sel,true,+$('#cAt').value)};
+$('#cDoH').onclick=()=>{if(cut.sel&&!cut.sel.ch)split(cut.sel,false,+$('#cAt').value)};
+$('#cWaste').onclick=()=>{if(cut.sel&&!cut.sel.ch){cutSnap();cut.sel.waste=!cut.sel.waste;drawCut()}};
+$('#cUndo').onclick=()=>{if(!cut.hist.length)return;cut.root=JSON.parse(cut.hist.pop());cut.sel=leaves(cut.root)[0];drawCut()};
+$('#cReset').onclick=()=>{const v=$('#cStock').value;[cut.W,cut.H]=v==='c'?[+$('#cSW').value,+$('#cSH').value]:v.split('x').map(Number);cutReset()};
+$('#cStock').onchange=()=>{$('#cCustom').style.display=$('#cStock').value==='c'?'grid':'none';$('#cReset').onclick()};
+$('#cSW').onchange=$('#cSH').onchange=()=>$('#cReset').onclick();
+$('#cType').onchange=()=>{cut.type=$('#cType').value;fillTh($('#cTh'),cut.type,cut.t);cut.t=+$('#cTh').value;drawCut()};
+$('#cTh').onchange=()=>{cut.t=+$('#cTh').value;drawCut()};
+function addPieces(list){
+ if(mode==='phys')setMode('build');
+ let x=-4.5; const z=-9+((addN++)%6)*0.4; const made=[];
+ for(const n of list){const w=n.w/1000,h=n.h/1000;const p=addPanel({type:cut.type,t:cut.t,w,h,pos:[x+w/2,h/2,z],rot:[0,0,0],name:`قطعة ${n.w}×${n.h}`});x+=w+0.15;if(x>4.5)x=-4.5;made.push(p)}
+ pushHist(); toast(`أُضيفت ${made.length} قطعة للنموذج`); if(made.length)select({kind:'panel',p:made[made.length-1]});
+}
+$('#cAdd').onclick=()=>{if(cut.sel&&!cut.sel.ch&&!cut.sel.waste){addPieces([cut.sel]);closeCut()}};
+$('#cAddAll').onclick=()=>{const l=leaves(cut.root).filter(n=>!n.waste);addPieces(l);closeCut()};
+function openCut(){$('#cutter').classList.add('show');if(!cut.root)cutReset();else drawCut()}
+function closeCut(){$('#cutter').classList.remove('show')}
+$('#bOpenCut').onclick=openCut; $('#cClose').onclick=closeCut;
+new ResizeObserver(()=>{if($('#cutter').classList.contains('show'))drawCut()}).observe(cv);
+
+/* ---------- export ---------- */
+let dl=null; try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(x=>{dl=x}).catch(()=>{})}catch(e){}
+async function saveFile(name,data){
+ if(dl){try{await dl.save({filename:name,data});toast('تم الحفظ: '+name)}catch(e){toast(e?.code==='declined'?'أُلغي التنزيل':'تعذّر التنزيل هنا ('+(e?.code||'خطأ')+')')}return}
+ const blob=data instanceof Blob?data:new Blob([data]); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+$('#bShot').onclick=()=>{
+ const h=tc.getHelper(); const hv=h.visible; h.visible=false; renderer.render(scene,camera);
+ canvas.toBlob(b=>{h.visible=hv;if(b)saveFile('glass-gallery.png',b)},'image/png');
+};
+$('#bGlb').onclick=async()=>{
+ toast('جاري تجهيز الملف…');
+ const wv=walls.map(w=>w.visible); walls.forEach(w=>w.visible=!w.userData.ceil||$('#ceil').checked);
+ const hid=lights.map(l=>l.h.visible); lights.forEach(l=>l.h.visible=false);
+ const swaps=[]; projs.forEach(o=>{const m=media[o.d.id];if(m?.video&&m.video.videoWidth){const c=document.createElement('canvas');c.width=m.video.videoWidth;c.height=m.video.videoHeight;c.getContext('2d').drawImage(m.video,0,0);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;o.quads.forEach(q=>{swaps.push([q,q.material.map]);q.material.map=t})}else if(m?.video){o.quads.forEach(q=>{swaps.push([q,q.material.map]);q.material.map=null})}});
+ try{
+  const buf=await new GLTFExporter().parseAsync([roomG,panelG,lightG,projG,quadG],{binary:true,onlyVisible:true});
+  const readme='Glass Studio export\nUnits: meters (1 unit = 1 m). Room 10 x 20 x 5 m.\nBlender: File > Import > glTF 2.0 (.glb/.gltf) > glass-model.glb\nGlass uses Principled BSDF transmission + IOR 1.52. Render with Cycles for real refraction.\n';
+  const zip=zipSync({'glass-model.glb':new Uint8Array(buf),'README.txt':strToU8(readme)});
+  await saveFile('glass-model-blender.zip',zip);
+ }catch(e){console.error(e);toast('تعذّر التصدير')}
+ finally{walls.forEach((w,i)=>w.visible=wv[i]);lights.forEach((l,i)=>l.h.visible=hid[i]);swaps.forEach(([q,m])=>{q.material.map=m;q.material.needsUpdate=true})}
+};
+$('#bSave').onclick=()=>saveFile('glass-project.json',ser());
+$('#bOpen').onclick=()=>$('#fOpen').click();
+$('#fOpen').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(mode!=='build')setMode('build');restore(await f.text());pushHist();toast('تم فتح المشروع')}catch(err){toast('ملف غير صالح')}e.target.value=''};
+
+/* ---------- keys / toast ---------- */
+let toastT=0; function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2200)}
+addEventListener('keydown',e=>{
+ if(e.target.matches('input,select,textarea'))return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return}
+ const k=e.key.toLowerCase();
+ if(k==='delete'||k==='backspace')delSel(); else if(k==='d')dupSel(); else if(k==='t')tc.setMode('translate'); else if(k==='r')tc.setMode('rotate'); else if(k==='escape'){select(null);closeCut()}
+});
+
+/* ---------- default scene ---------- */
+function defaultScene(){
+ const zig=[[-2.4,-3,30],[-1.2,-1.8,-30],[0,-0.6,30],[1.2,0.6,-30],[2.4,1.8,30]];
+ zig.forEach(([x,z,ry],i)=>addPanel({type:i%2?'extraclear':'tempered',t:10,w:1.2,h:2.4,pos:[x,1.2,z],rot:[0,ry,0],anchored:i===0}));
+ addPanel({name:'شاشة مطفية',type:'frosted',t:8,w:3,h:2,pos:[0,1.6,6],rot:[0,0,0],anchored:true});
+ addPanel({name:'مرآة',type:'mirror',t:6,w:1,h:2.2,pos:[3.8,1.1,-1],rot:[0,-60,0],anchored:true});
+ addPanel({name:'رجل طاولة 1',type:'tempered',t:12,w:0.8,h:0.9,pos:[-0.8,0.45,-7],rot:[0,90,0]});
+ addPanel({name:'رجل طاولة 2',type:'tempered',t:12,w:0.8,h:0.9,pos:[0.8,0.45,-7],rot:[0,90,0]});
+ addPanel({name:'سطح طاولة',type:'laminated',t:10.76,w:2,h:1,pos:[0,0.9+0.00538,-7],rot:[-90,0,0]});
+ addLight({kind:'spot',pos:[0,4.9,-4],target:[0,0,-1],intensity:1400,angle:32});
+ addLight({kind:'spot',pos:[2.5,4.9,2],target:[1.5,0,0],intensity:1200,angle:28});
+ addLight({kind:'spot',pos:[-2,4.9,-8],target:[0,0.9,-7],intensity:900,angle:22});
+ addLight({kind:'point',pos:[-3,3,7],intensity:120,color:'#cfe0ff'});
+ addProj({pos:[0,3.2,0.5],yaw:180,pitch:-8});
+ addProj({pos:[-4.4,3.4,-1.2],yaw:-90,pitch:-10});
+}
+let loaded=false; try{const s=localStorage.getItem('gs_project');if(s){restore(s);loaded=panels.length+lights.length+projs.length>0}}catch(e){}
+if(!loaded)defaultScene();
+pushHist(); renderLists();
+
+/* ---------- loop ---------- */
+new ResizeObserver(()=>{const w=view.clientWidth,h=view.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}).observe(view);
+const camTmp=new V3();
+renderer.setAnimationLoop(()=>{
+ orbit.update();
+ if(live){
+  for(let i=0;i<4;i++)live.w.step(1/240);
+  while(shatterQ.length)shatter(shatterQ.shift());
+  live.list.forEach(o=>{if(o.broken&&o.p.d.type!=='laminated')return;o.p.mesh.position.copy(o.b.position);o.p.mesh.quaternion.copy(o.b.quaternion)});
+  shardG.children.forEach(m=>{m.position.copy(m.userData.body.position);m.quaternion.copy(m.userData.body.quaternion)});
+ }
+ const cut_=$('#cutaway').checked;
+ walls.forEach(w=>{ if(w.userData.ceil){w.visible=$('#ceil').checked&&camera.position.y<ROOM.h;return}
+  camTmp.copy(camera.position).sub(w.position); w.visible=!cut_||camTmp.dot(w.userData.n)>0 });
+ projs.forEach(updateProj);
+ renderer.render(scene,camera);
+});
+}
+</script>
+</body>
+</html>
