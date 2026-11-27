@@ -235,13 +235,12 @@ function renderChips(){const el=$('#chips');el.innerHTML=`<button data-z="" clas
  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(b.dataset.z)openZone(b.dataset.z);else{S.zone=null;S.sel=null;paintSel();setView();renderChips();renderSheet()}})}
 const sw=p=>`<span class="sw" style="background:${okHex(p.c1)?p.c1:'#dfe7ec'}"><b style="background:${okHex(p.c2)?p.c2:'#7aa6c4'}"></b></span>`;
 const sub=p=>[p.company,p.info].filter(Boolean).map(esc).join(' · ');
-function renderSheet(){const t=S.tab;sheet.classList.toggle('open',t!=='fridge'||!!S.zone||!!S.sel||matchMedia('(min-width:900px)').matches);
+function renderSheet(){const t=S.tab;sheet.classList.toggle('open',t!=='fridge'||!!S.zone||!!S.sel||matchMedia('(min-width:900px)').matches||(!local&&S.synced&&!Object.values(S.products).some(p=>ZG[p.zone])));
  if(t==='fridge')return S.zone?zoneSheet():overview();if(t==='cart')return cartSheet();if(t==='note')return noteSheet();if(t==='house')return houseSheet();if(t==='add')return formSheet(S.editing);if(t==='feed')return feedSheet()}
 function overview(){const ps=Object.values(S.products).filter(p=>ZG[p.zone]);const n=ps.reduce((a,p)=>a+(p.qty||1),0);
- if(!local&&!Object.keys(S.products).length&&S.synced)return offerSeed();
- sheet.innerHTML=`<div class="sh"><h2>الثلاجة</h2></div><p class="small">فيها ${n} غرض. الثلاجة بالموقع هي شكلها بعد المشتريات: اللي ناقص بتكبسوا عليه وبيروح للسلة.</p>`+
+ sheet.innerHTML=`<div class="sh"><h2>الثلاجة</h2></div>${!local&&!ps.length?`<div class="total" style="align-items:center;gap:10px"><span>الثلاجة فاضية. بدكم أعبّيها بالمحتويات الأصلية؟</span><button class="pill pri" id="seedO">عبّيها</button></div>`:''}<p class="small">فيها ${n} غرض. الثلاجة بالموقع هي شكلها بعد المشتريات: اللي ناقص بتكبسوا عليه وبيروح للسلة.</p>`+
  ZONES.map(z=>{const c=ps.filter(p=>p.zone===z.k);return `<div class="row" data-z="${z.k}" role="button" tabindex="0"><div class="nm"><div>${z.t}</div><div class="small">${c.length?c.map(p=>esc(p.name)).join('، '):'فاضي'}</div></div><span class="price">${c.length}</span></div>`}).join('');
- sheet.querySelectorAll('[data-z]').forEach(r=>r.onclick=()=>openZone(r.dataset.z))}
+ sheet.querySelectorAll('[data-z]').forEach(r=>r.onclick=()=>openZone(r.dataset.z));const so=$('#seedO');if(so)so.onclick=()=>doSeed(so)}
 function zoneSheet(){const z=S.zone;const ps=Object.values(S.products).filter(p=>p.zone===z).sort(byOrder);
  sheet.innerHTML=`<div class="sh"><h2>${ZT[z]}</h2><button class="btn" id="addHere">+ غرض هون</button><button class="x" id="cls" aria-label="رجوع">×</button></div>`+
  (ps.length?ps.map(p=>{const miss=missQty(p.id);return `<div class="row ${S.sel===p.id?'sel':''} ${miss>=(p.qty||1)?'ghost':''}">${sw(p)}<div class="nm"><div>${esc(p.name)}${(p.qty||1)>1?' ×'+(p.qty||1):''}</div><div class="small">${sub(p)}${miss?' · ناقص '+miss:''}${p.ub?' · آخر تعديل: '+esc(p.ub):''}</div>${cheapLine(p)}</div>
@@ -492,6 +491,7 @@ function feedSheet(){const ms=Object.values(S.members).sort((a,b)=>(b.seen||0)-(
  $('#lo').onclick=()=>{if(confirmLo++)logout();else $('#lo').textContent='اكبسوا كمان مرة للتأكيد'}}
 let confirmLo=0;
 function offerSeed(){S.tab='fridge';sheet.classList.add('open');sheet.innerHTML=`<div class="sh"><h2>الثلاجة فاضية</h2></div><p>بدكم أعبّيها بالمحتويات الأصلية؟</p><div class="acts"><button class="pill pri" id="seed">عبّيها</button></div>`;
- $('#seed').onclick=async e=>{e.target.disabled=true;e.target.textContent='عم يعبّي…';for(const p of [...DEFAULTS,...HOUSE_DEF]){try{await db.collection('products').doc(p.id).set({...p,ub:ME.name,ut:Date.now()})}catch(er){fail(er);break}}logA('عبّى الثلاجة بالمحتويات الأصلية');renderSheet()}}
+ $('#seed').onclick=e=>doSeed(e.target)}
+async function doSeed(btn){btn.disabled=true;btn.textContent='عم يعبّي…';for(const p of [...DEFAULTS,...HOUSE_DEF]){if(S.products[p.id])continue;try{await db.collection('products').doc(p.id).set({...p,ub:ME.name,ut:Date.now()})}catch(er){fail(er);break}}logA('عبّى الثلاجة بالمحتويات الأصلية');renderSheet()}
 boot();
 }
