@@ -238,6 +238,7 @@ const sub=p=>[p.company,p.info].filter(Boolean).map(esc).join(' · ');
 function renderSheet(){const t=S.tab;sheet.classList.toggle('open',t!=='fridge'||!!S.zone||!!S.sel||matchMedia('(min-width:900px)').matches);
  if(t==='fridge')return S.zone?zoneSheet():overview();if(t==='cart')return cartSheet();if(t==='note')return noteSheet();if(t==='house')return houseSheet();if(t==='add')return formSheet(S.editing);if(t==='feed')return feedSheet()}
 function overview(){const ps=Object.values(S.products).filter(p=>ZG[p.zone]);const n=ps.reduce((a,p)=>a+(p.qty||1),0);
+ if(!local&&!Object.keys(S.products).length&&S.synced)return offerSeed();
  sheet.innerHTML=`<div class="sh"><h2>الثلاجة</h2></div><p class="small">فيها ${n} غرض. الثلاجة بالموقع هي شكلها بعد المشتريات: اللي ناقص بتكبسوا عليه وبيروح للسلة.</p>`+
  ZONES.map(z=>{const c=ps.filter(p=>p.zone===z.k);return `<div class="row" data-z="${z.k}" role="button" tabindex="0"><div class="nm"><div>${z.t}</div><div class="small">${c.length?c.map(p=>esc(p.name)).join('، '):'فاضي'}</div></div><span class="price">${c.length}</span></div>`}).join('');
  sheet.querySelectorAll('[data-z]').forEach(r=>r.onclick=()=>openZone(r.dataset.z))}
@@ -470,8 +471,8 @@ function startSync(){db=famDb(ME.code);local=false;$('#whoBtn').hidden=false;$('
  Object.assign(S,{products:{},cart:{},lists:{},note:'',buyer:'',photos:[null,null,null,null,null,null]});refresh();setSync(false,'عم يحمّل…');
  const timer=setTimeout(()=>setSync(false,'ما في اتصال — بنكمّل على آخر نسخة'),10000);let first=true;
  const err=e=>{clearTimeout(timer);if(e&&e.code==='permission-denied'){setSync(false,'الكود ما عاد شغّال');showLogin('الكود تغيّر، ادخلوا من جديد')}else setSync(false,'انقطع التزامن')};
- const live=s=>{if(!s.metadata.fromCache){clearTimeout(timer);setSync(true,'متزامن مع العيلة')}};
- subs.push(db.collection('products').onSnapshot({includeMetadataChanges:false},s=>{S.products={};s.docs.forEach(d=>S.products[d.id]={...d.data(),id:d.id});live(s);refresh();if(first&&!s.metadata.fromCache){first=false;if(s.empty)setTimeout(offerSeed,50)}},err));
+ const live=s=>{if(!s.metadata.fromCache){clearTimeout(timer);S.synced=true;setSync(true,'متزامن مع العيلة')}};
+ subs.push(db.collection('products').onSnapshot({includeMetadataChanges:true},s=>{S.products={};s.docs.forEach(d=>S.products[d.id]={...d.data(),id:d.id});live(s);refresh();},err));
  subs.push(db.collection('cart').onSnapshot(s=>{S.cart={};s.docs.forEach(d=>S.cart[d.id]={...d.data(),id:d.id});refresh()},err));
  subs.push(db.collection('lists').onSnapshot(s=>{S.lists={};s.docs.forEach(d=>{const v=d.data();S.lists[d.id]={...v,id:d.id,items:Array.isArray(v.items)?v.items:[]}});refresh()},err));
  subs.push(db.doc('state/note').onSnapshot(d=>{const v=d.exists?String(d.data().text||''):'';S.noteBy=d.exists?String(d.data().by||''):'';if(!(document.activeElement&&document.activeElement.id==='nt'))S.note=v;drawNote();if(S.tab!=='note')refresh()},err));
@@ -491,6 +492,6 @@ function feedSheet(){const ms=Object.values(S.members).sort((a,b)=>(b.seen||0)-(
  $('#lo').onclick=()=>{if(confirmLo++)logout();else $('#lo').textContent='اكبسوا كمان مرة للتأكيد'}}
 let confirmLo=0;
 function offerSeed(){S.tab='fridge';sheet.classList.add('open');sheet.innerHTML=`<div class="sh"><h2>الثلاجة فاضية</h2></div><p>بدكم أعبّيها بالمحتويات الأصلية؟</p><div class="acts"><button class="pill pri" id="seed">عبّيها</button></div>`;
- $('#seed').onclick=async e=>{e.target.disabled=true;e.target.textContent='عم يعبّي…';for(const p of [...DEFAULTS,...HOUSE_DEF]){try{await db.collection('products').doc(p.id).set(p)}catch(er){fail(er);break}}renderSheet()}}
+ $('#seed').onclick=async e=>{e.target.disabled=true;e.target.textContent='عم يعبّي…';for(const p of [...DEFAULTS,...HOUSE_DEF]){try{await db.collection('products').doc(p.id).set({...p,ub:ME.name,ut:Date.now()})}catch(er){fail(er);break}}logA('عبّى الثلاجة بالمحتويات الأصلية');renderSheet()}}
 boot();
 }
