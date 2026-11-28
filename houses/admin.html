@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap">
 <style>
-:root{--bg:#E5E3DE;--ink:#131718;--muted:#595C4B;--line:#C8C5C1;--green:#69706C;--cream:#F2ECDD}
+:root{--bg:#F3F3F1;--ink:#131718;--muted:#595C4B;--line:#C8C5C1;--green:#69706C;--cream:#F2ECDD}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.5 Heebo,system-ui,sans-serif;padding:16px 20px 40px}
@@ -32,7 +32,12 @@ button{cursor:pointer}
 .time input{flex:1;accent-color:var(--ink)}
 main{max-width:1280px;margin:0 auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.card{background:transparent;border:0;padding:0;cursor:pointer;text-align:start}
+.card{position:relative;background:transparent;border:0;padding:0;cursor:pointer;text-align:start}
+.pick{position:absolute;top:8px;inset-inline-start:8px;display:flex;align-items:center;gap:5px;background:rgba(243,243,241,.92);border-radius:999px;padding:3px 9px 3px 6px;font-size:12px;font-weight:600}
+.pick input{width:16px;height:16px;accent-color:#5F1B1C;margin:0}
+.card.sel canvas{outline:3px solid #5F1B1C;outline-offset:2px}
+.b.danger{border-color:#5F1B1C;color:#5F1B1C}.b.danger[data-arm]{background:#5F1B1C;color:#fff}
+.b:disabled{opacity:.35;cursor:default}
 .card canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:6px}
 .card .m{font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;gap:6px}
 .card .t{font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -40,7 +45,7 @@ main{max-width:1280px;margin:0 auto}
 .overlay{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
 .overlay canvas{width:100%;max-width:840px;aspect-ratio:1/1;border-radius:6px;display:block}
 .data{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px}
-.panel{background:#F2F1EE;border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto}
+.panel{background:#FAFAF9;border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto}
 .panel p.q{margin:0 0 10px;color:var(--muted);font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 5px;border-bottom:1px solid var(--line);text-align:start;vertical-align:middle}
@@ -51,10 +56,10 @@ td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 .sw{display:inline-block;width:11px;height:11px;border-radius:50%;margin-inline-end:6px;vertical-align:-1px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
 .big{position:fixed;inset:0;background:rgba(19,23,24,.65);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9}
 .big[hidden]{display:none}
-.big .box{background:var(--bg);border-radius:14px;padding:14px;width:min(660px,100%)}
+.big .box{background:#FAFAF9;border-radius:14px;padding:14px;width:min(660px,100%)}
 .big canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:6px}
 .big .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
-.gate{max-width:420px;margin:60px auto;background:#F2F1EE;border:1px solid var(--line);border-radius:14px;padding:20px}
+.gate{max-width:420px;margin:60px auto;background:#FAFAF9;border:1px solid var(--line);border-radius:14px;padding:20px}
 .gate input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;margin:10px 0;background:#fff}
 .msg{color:#5F1B1C;font-size:14px;min-height:1.4em}
 .note{font-size:13px;color:var(--muted)}
@@ -86,6 +91,8 @@ td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
   <button class="b" id="export" type="button">Download Excel</button>
   <button class="b" id="ar" type="button">Labels: EN</button>
   <button class="b" id="motion" type="button" aria-pressed="true">Motion on</button>
+  <span class="sep"></span>
+  <button class="b danger" id="delsel" type="button" disabled>Delete selected</button><span class="note" id="delmsg" role="status"></span>
 </div>
 <div class="bar">
   <div class="time"><button class="b" id="play" type="button">Play the 3 days</button><input type="range" id="t" min="0" max="1000" value="1000" step="1" aria-label="Time"><span id="tl"></span></div>
@@ -108,7 +115,7 @@ td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 <script src="common.js"></script>
 <script>
 (function(){
-var H=HOUSES,EN=H.T.en,rows=[],only={},view='grid',labels='en',tMax=1,tMin=0,cut=Infinity,playing=null,key='',still=false,lives=[],bigLive=null,ovLive=null;
+var H=HOUSES,EN=H.T.en,TH=H.LIGHT,picked={},rows=[],only={},view='grid',labels='en',tMax=1,tMin=0,cut=Infinity,playing=null,key='',still=false,lives=[],bigLive=null,ovLive=null;
 H.FEELINGS.forEach(function(f){only[f.k]=true});
 function $(id){return document.getElementById(id)}
 function pad(n){return String(n).padStart(2,'0')}
@@ -130,7 +137,7 @@ function load(){
 function visible(){return rows.filter(function(h){return h.ms<=cut})}
 function chips(){var box=$('fchips');box.textContent='';
   H.FEELINGS.forEach(function(f){var b=el('button',null,'fchip');b.type='button';b.setAttribute('aria-pressed',only[f.k]);
-    var i=el('i');i.style.background=f.color;b.appendChild(i);b.append(EN.feelings[f.k]);
+    var i=el('i');i.style.background=TH.colors[f.k];b.appendChild(i);b.append(EN.feelings[f.k]);
     b.onclick=function(){only[f.k]=!only[f.k];chips();draw()};box.appendChild(b)})}
 
 function draw(){
@@ -143,23 +150,33 @@ function drawGrid(v){var g=$('grid');g.textContent='';
   v.slice().reverse().forEach(function(h){var c=el('button',null,'card');c.type='button';
     var cv=el('canvas');cv.width=320;cv.height=320;c.appendChild(cv);
     var m=el('div',null,'m');m.appendChild(el('span',h.town||'—','t'));m.appendChild(el('span',fmt(h.ms)));c.appendChild(m);
-    var dots=el('div',null,'dots');(h.marks||[]).forEach(function(mk){var i2=el('i');i2.style.background=H.FC[mk.k];i2.title=EN.feelings[mk.k];dots.appendChild(i2)});c.appendChild(dots);
-    c.onclick=function(){$('bt').textContent=(h.town||'—')+' · '+fmt(h.ms);if(bigLive)bigLive.stop();bigLive=new H.Live($('bc'),h,labels,{only:only,still:still});$('big').hidden=false};
-    g.appendChild(c);lives.push(new H.Live(cv,h,labels,{only:only,still:still,labels:false}))})}
+    var dots=el('div',null,'dots');(h.marks||[]).forEach(function(mk){var i2=el('i');i2.style.background=TH.colors[mk.k];i2.title=EN.feelings[mk.k];dots.appendChild(i2)});c.appendChild(dots);
+    var pk=el('label',null,'pick'),cb=el('input');cb.type='checkbox';cb.checked=!!picked[h.id];cb.setAttribute('aria-label','Select house from '+(h.town||'')+' '+fmt(h.ms));pk.appendChild(cb);pk.append('Select');c.appendChild(pk);
+    if(picked[h.id])c.classList.add('sel');
+    pk.onclick=function(e){e.stopPropagation()};cb.onchange=function(){if(cb.checked)picked[h.id]=1;else delete picked[h.id];c.classList.toggle('sel',cb.checked);selUI()};
+    c.onclick=function(){$('bt').textContent=(h.town||'—')+' · '+fmt(h.ms);if(bigLive)bigLive.stop();bigLive=new H.Live($('bc'),h,labels,{only:only,still:still,theme:TH});$('big').hidden=false};
+    g.appendChild(c);lives.push(new H.Live(cv,h,labels,{only:only,still:still,labels:false,theme:TH,every:2}))})}
+function selUI(){var n=Object.keys(picked).length,b=$('delsel');b.disabled=!n;delete b.dataset.arm;b.textContent=n?'Delete selected ('+n+')':'Delete selected'}
+$('delsel').onclick=function(){var b=this,ids=Object.keys(picked);if(!ids.length)return;
+  if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Sure? Delete '+ids.length+' for good';setTimeout(function(){if(b.dataset.arm)selUI()},4000);return}
+  b.disabled=true;b.textContent='Deleting…';
+  H.remove(key,ids).then(function(r){if(r&&r.ok){$('delmsg').textContent='Deleted '+(r.deleted!=null?r.deleted:ids.length)+'.';picked={};selUI();load()}
+    else{$('delmsg').textContent=r&&r.error==='key'?'Wrong key.':'Could not delete. Update the Apps Script code (see Code.gs) and deploy a new version.';selUI()}})
+  .catch(function(){$('delmsg').textContent='Could not delete. Update the Apps Script code (see Code.gs) and deploy a new version.';selUI()})};
 function zoneName(z){return EN.places[z]||z}
 function drawOverlay(v){
-  var groups={};v.forEach(function(h){(h.marks||[]).forEach(function(m){if(only[m.k])(groups[m.k]=groups[m.k]||[]).push(m)})});
+  var marks=[];v.forEach(function(h,hi){(h.marks||[]).forEach(function(m,mi){if(only[m.k])marks.push(Object.assign({_seed:hi*977+mi*131},m))})});
   var maps=v.length?v:[{v:2,streets:[],rooms:[],marks:[]}];
   var a=Math.max(.06,Math.min(1,1.5/Math.max(v.length,1)));
   if(ovLive)ovLive.stop();
-  ovLive=new H.Live($('ov'),{id:'overlay',marks:[]},labels,{maps:maps,alpha:a,labels:v.length<=1,group:H.FEELINGS.map(function(f){return groups[f.k]||[]}),layerAlpha:Math.max(.35,Math.min(1,5/Math.max(v.length,1))),still:still});
+  ovLive=new H.Live($('ov'),{id:'overlay',marks:[]},labels,{maps:maps,marks:marks,alpha:a,labels:v.length<=1,layerAlpha:Math.max(.35,Math.min(1,5/Math.max(v.length,1))),still:still,theme:TH});
   lives.push(ovLive);
   $('ovq').textContent='Share of the times each feeling was picked, by where most of its drawing sits. '+v.length+' houses.';
   var t=$('tbl');t.textContent='';var zones=['home','street','hood','outside'],tot={},cnt={};
   v.forEach(function(h){(h.marks||[]).forEach(function(m){var p=H.placeOf(h,m.k).zone||'outside';cnt[m.k]=(cnt[m.k]||0)+1;tot[m.k]=tot[m.k]||{};tot[m.k][p]=(tot[m.k][p]||0)+1})});
   var used=zones.filter(function(z){return H.FEELINGS.some(function(f){return tot[f.k]&&tot[f.k][z]})});
   var hr=el('tr');hr.appendChild(el('th','Feeling'));used.forEach(function(z){hr.appendChild(el('th',zoneName(z)))});t.appendChild(hr);
-  H.FEELINGS.forEach(function(f){if(!only[f.k]||!cnt[f.k])return;var tr=el('tr'),td=el('td');var s=el('span',null,'sw');s.style.background=f.color;td.appendChild(s);td.append(EN.feelings[f.k]);tr.appendChild(td);
+  H.FEELINGS.forEach(function(f){if(!only[f.k]||!cnt[f.k])return;var tr=el('tr'),td=el('td');var s=el('span',null,'sw');s.style.background=TH.colors[f.k];td.appendChild(s);td.append(EN.feelings[f.k]);tr.appendChild(td);
     used.forEach(function(z){tr.appendChild(el('td',pct((tot[f.k][z]||0),cnt[f.k])+'%','n'))});t.appendChild(tr)});
 }
 
@@ -184,7 +201,7 @@ function bar(p){var d=el('div',null,'barc'),s=el('span');s.style.width=Math.max(
 function panel(title,q){var p=el('div',null,'panel');p.appendChild(el('h3',title));p.appendChild(el('p',q,'q'));$('data').appendChild(p);return p}
 function table(p,head,rowsArr){var t=el('table'),tr=el('tr');head.forEach(function(h){tr.appendChild(el('th',h))});t.appendChild(tr);
   rowsArr.forEach(function(r){var tr2=el('tr');r.forEach(function(c){var td=el('td');if(c instanceof Node)td.appendChild(c);else{td.textContent=c;if(typeof c==='number'||/%$/.test(String(c)))td.className='n'}tr2.appendChild(td)});t.appendChild(tr2)});p.appendChild(t)}
-function feelCell(k){var s=el('span');s.style.whiteSpace='nowrap';var d=el('span',null,'sw');d.style.background=H.FC[k];s.appendChild(d);s.append(EN.feelings[k]);return s}
+function feelCell(k){var s=el('span');s.style.whiteSpace='nowrap';var d=el('span',null,'sw');d.style.background=TH.colors[k];s.appendChild(d);s.append(EN.feelings[k]);return s}
 function drawData(v){
   var A=analyse(v),n=A.n;$('data').textContent='';
   $('dn').textContent=n?'Every percentage here is out of the '+n+' houses received so far'+(cut===Infinity?'':' (up to '+fmt(cut)+')')+', not out of 100.':'No houses yet.';
