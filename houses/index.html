@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Where do we feel something hidden?</title>
+<title>What lives here?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap">
 <style>
@@ -43,6 +43,9 @@ input[type=text]{width:100%;font:inherit;font-size:17px;border:1.5px solid var(-
 .tab .sw{width:100%;height:6px;border-radius:3px}
 .tab[aria-pressed="true"]{border-color:var(--ink)}
 .tab .ok{font-size:11px;font-weight:500;color:var(--muted);min-height:1em}
+.dear{font-size:30px;font-weight:800;margin:26px 0 22px}
+.from{display:block;font-size:20px;font-weight:600;margin:0 0 10px}
+.me{font-size:22px;font-weight:700;text-align:end;margin:22px 4px 0;font-style:italic}
 .done{text-align:center;padding-top:10px}
 .done .cv{max-width:380px;margin:16px auto 0;pointer-events:none}
 </style>
@@ -50,11 +53,13 @@ input[type=text]{width:100%;font:inherit;font-size:17px;border:1.5px solid var(-
 <body>
 <div class="wrap">
   <div class="top"><h1 id="t-title"></h1><button type="button" class="lang" id="lang"></button></div>
-  <p class="intro" id="t-intro"></p>
+  <p class="intro" id="t-intro" style="display:none"></p>
 
   <section class="step on" id="st1">
-    <h2 id="t-s1"></h2><p class="hint" id="t-town"></p>
+    <p class="dear" id="t-dear"></p>
+    <label class="from" for="town" id="t-from"></label>
     <input type="text" id="town" maxlength="60" autocomplete="off">
+    <p class="me" id="t-me"></p>
     <div class="msg" id="m1" role="status"></div>
     <div class="nav"><button type="button" class="btn" id="n1"></button></div>
   </section>
@@ -102,8 +107,8 @@ function L(){return H.T[lang]}
 function applyLang(){
   var t=L();document.documentElement.lang=lang;document.documentElement.dir=t.dir;document.title=t.title;
   $('t-title').textContent=t.title;$('t-intro').textContent=t.intro;$('lang').textContent=t.lang;
-  ['s1','s2','s2h','s3','s3h','s4','s4h','streets','inside'].forEach(function(k){$('t-'+k).textContent=t[k]});
-  $('t-town').textContent=t.town;$('town').placeholder=t.townPh;
+  ['s2','s2h','s3','s3h','s4','s4h','streets','inside','dear','from','me'].forEach(function(k){$('t-'+k).textContent=t[k]});
+  $('town').placeholder=t.townPh;
   $('n1').textContent=$('n2').textContent=$('n3').textContent=t.next;
   $('b2').textContent=$('b3').textContent=$('b4').textContent=t.back;
   $('del').textContent=t.del;$('undo').textContent=t.undo;$('clr').textContent=t.clear;$('send').textContent=t.send;
@@ -111,7 +116,7 @@ function applyLang(){
   buildTools();buildChips();buildTabs();drawPlan();if(live)live.update(house,lang);if(done)done.update(house,lang);
 }
 $('lang').onclick=function(){lang=lang==='en'?'ar':'en';house.lang=lang;try{localStorage.setItem('houses.lang',lang)}catch(e){}applyLang()};
-function go(n){for(var i=1;i<=5;i++)$('st'+i).classList.toggle('on',i===n);$('t-intro').style.display=n===1?'':'none';window.scrollTo(0,0);
+function go(n){for(var i=1;i<=5;i++)$('st'+i).classList.toggle('on',i===n);$('t-intro').style.display='none';window.scrollTo(0,0);
   if(n===2)drawPlan();if(n===4){if(!cur)cur=picked[0];buildTabs();if(!live)live=new H.Live($('cvDraw'),house,lang,{alpha:.75});else live.update(house,lang);live.extra=extra}}
 
 /* step 1 */

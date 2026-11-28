@@ -9,7 +9,7 @@ var HOME = {x:330,y:330,w:340,h:340};
 var STREETS = {st_n:{x:0,y:200,w:1000,h:70}, st_s:{x:0,y:730,w:1000,h:70}, st_w:{x:200,y:0,w:70,h:1000}, st_e:{x:730,y:0,w:70,h:1000}};
 
 var T = {
-  en:{dir:'ltr',title:'Where do we feel something hidden?',
+  en:{dir:'ltr',title:'What lives here?',dear:'Dear you,',from:'Where are you from?',me:'Me',
     intro:'Draw your home from above and mark three places, inside it or around it, where you feel three different feelings. It is anonymous, and each person sends one house.',
     town:'Which town or city is this house in?',townPh:'Town or city',next:'Next',back:'Back',
     s1:'1 · Your house',s2:'2 · Around your house (optional)',s2h:'The square in the middle is your home, and around it is the neighbourhood. You can add the streets around it, and rooms inside. Drag a room to move it, drag its corner to resize.',
@@ -25,7 +25,7 @@ var T = {
     rooms:{kitchen:'Kitchen',living:'Living room',bedroom:'Bedroom',bath:'Bathroom',door:'Front door',stairs:'Stairs',yard:'Yard',
       hood_n:'Neighbourhood',hood_e:'Neighbourhood',hood_s:'Neighbourhood',hood_w:'Neighbourhood',roof:'Roof'},
     places:{home:'Home (inside)',street:'Street',hood:'Neighbourhood',outside:'Outside / unmarked'}},
-  ar:{dir:'rtl',title:'وين بنحس إنه في إشي مخبّى؟',
+  ar:{dir:'rtl',title:'شو ساكن هون؟',dear:'عزيزي/عزيزتي،',from:'من وين إنت/ي؟',me:'أنا',
     intro:'ارسم/ي بيتك من فوق، وعلّم/ي ٣ أماكن، جوّا البيت أو حواليه، بتحس/ي فيها ٣ مشاعر مختلفة. بدون أسماء، وكل شخص ببعت بيت واحد.',
     town:'بأي بلد أو مدينة هاد البيت؟',townPh:'البلد أو المدينة',next:'التالي',back:'رجوع',
     s1:'١ · بيتك',s2:'٢ · حوالين البيت (اختياري)',s2h:'المربع بالنص هو بيتك، وحواليه الحارة. بتقدر/ي تضيف/ي الشوارع اللي حواليه، وغرف جوّا البيت. اسحب/ي الغرفة لتحرّكها، واسحب/ي زاويتها لتكبّرها.',
