@@ -1,7 +1,7 @@
 /* Shared code for the participant page and the admin page.
    Set ENDPOINT to the Google Apps Script web-app URL. Empty = local test mode (saves in this browser only). */
 var HOUSES = (function(){
-var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyd-dJvWz3PVeob9-9WbwXzAKtTDWQudaPeU2eBEeQZMmKGCx873nSNr0TRRpfgPgJsHA/exec';
+var ENDPOINT = 'https://script.google.com/macros/s/AKfycbw8qHkkc6XXm_ncsTaz6CpGQkqA_59-bqAk6_bjwdRCIbANYqJRlmG39RKd9v905KIonA/exec';
 var MAX = 100;
 var SIZE = 1000; /* drawings are stored in a 1000 x 1000 space */
 
