@@ -12,7 +12,7 @@ var T = {
   en:{dir:'ltr',title:'What lives here?',dear:'Dear you,',from:'Where are you from?',me:'Me',
     intro:'Draw your home from above and mark three places, inside it or around it, where you feel three different feelings. It is anonymous, and each person sends one house.',
     town:'Which town or city is this house in?',townPh:'Town or city',next:'Next',back:'Back',
-    s1:'1 · Your house',s2:'2 · Around your house (optional)',s2h:'The square in the middle is your home, and around it is the neighbourhood. You can add the streets around it, and rooms inside. Drag a room to move it, drag its corner to resize.',
+    s1:'1 · Your house',s2:'2 · Around your house (optional)',s2h:'The square in the middle is your home, and around it is the neighbourhood. Add streets and drag them closer or further. Add rooms inside: drag to move, drag the corner to resize, tap × to remove.',
     streets:'Streets around',inside:'Inside the home',
     s3:'3 · Pick 3 different feelings',s3h:'Choose exactly three.',s4:'4 · Draw',s4h:'Draw each feeling where you feel it: inside the home, in the street or in the neighbourhood.',
     undo:'Undo',clear:'Clear',del:'Remove room',send:'Send my house',sending:'Sending…',
@@ -28,7 +28,7 @@ var T = {
   ar:{dir:'rtl',title:'شو ساكن هون؟',dear:'عزيزي/عزيزتي،',from:'من وين إنت/ي؟',me:'أنا',
     intro:'ارسم/ي بيتك من فوق، وعلّم/ي ٣ أماكن، جوّا البيت أو حواليه، بتحس/ي فيها ٣ مشاعر مختلفة. بدون أسماء، وكل شخص ببعت بيت واحد.',
     town:'بأي بلد أو مدينة هاد البيت؟',townPh:'البلد أو المدينة',next:'التالي',back:'رجوع',
-    s1:'١ · بيتك',s2:'٢ · حوالين البيت (اختياري)',s2h:'المربع بالنص هو بيتك، وحواليه الحارة. بتقدر/ي تضيف/ي الشوارع اللي حواليه، وغرف جوّا البيت. اسحب/ي الغرفة لتحرّكها، واسحب/ي زاويتها لتكبّرها.',
+    s1:'١ · بيتك',s2:'٢ · حوالين البيت (اختياري)',s2h:'المربع بالنص هو بيتك، وحواليه الحارة. ضيف/ي شوارع واسحبها/يها لتقرّب أو تبعد. ضيف/ي غرف جوّا: اسحب/ي لتحرّك، اسحب/ي الزاوية لتكبّر، وكبسة على × بتشيلها.',
     streets:'الشوارع حوالين',inside:'جوّا البيت',
     s3:'٣ · اختار/ي ٣ مشاعر مختلفة',s3h:'بالزبط تلاتة.',s4:'٤ · ارسم/ي',s4h:'ارسم/ي كل شعور بالمكان اللي بتحس/ي فيه: جوّا البيت، بالشارع، أو بالحارة.',
     undo:'تراجع',clear:'امحي',del:'شيل الغرفة',send:'ابعت/ي البيت',sending:'عم ببعت…',
@@ -96,6 +96,9 @@ function drawGeom(ctx,g,t,o){
 var BRUSH={};['anger','hidden','calm','fear','disgust','contempt'].forEach(function(k){BRUSH[k]=function(ctx,pts,si,o){drawGeom(ctx,geom(k,pts,si||1),null,o)}});
 
 function isV2(h){return h&&h.v===2}
+var SLIM={st_n:[0,HOME.y-70],st_s:[HOME.y+HOME.h,930],st_w:[0,HOME.x-70],st_e:[HOME.x+HOME.w,930]};
+function streetRect(house,k){var b=STREETS[k];if(!b)return null;var p=house.sp&&house.sp[k];if(p==null)return b;
+  var lim=SLIM[k];p=Math.max(lim[0],Math.min(lim[1],p));return (k==='st_n'||k==='st_s')?{x:b.x,y:p,w:b.w,h:b.h}:{x:p,y:b.y,w:b.w,h:b.h}}
 /* map layer: neighbourhood, streets, the home square, rooms */
 function drawMap(ctx,house,lang,opt){
   opt=opt||{};var L=T[lang]||T.en,a=opt.alpha==null?1:opt.alpha,ln=opt.line||C.line;
@@ -103,7 +106,7 @@ function drawMap(ctx,house,lang,opt){
   var lbl=opt.labels!==false;
   if(isV2(house)){
     if(lbl){ctx.font='500 28px Heebo, system-ui, sans-serif';ctx.textAlign='left';ctx.globalAlpha=a*.7;ctx.fillText(L.hood,24,30);ctx.globalAlpha=a}
-    (house.streets||[]).forEach(function(k){var s=STREETS[k];if(!s)return;ctx.lineWidth=2;
+    (house.streets||[]).forEach(function(k){var s=streetRect(house,k);if(!s)return;ctx.lineWidth=opt.selStreet===k?4:2;
       ctx.beginPath();if(s.w>s.h){ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+s.w,s.y);ctx.moveTo(s.x,s.y+s.h);ctx.lineTo(s.x+s.w,s.y+s.h)}else{ctx.moveTo(s.x,s.y);ctx.lineTo(s.x,s.y+s.h);ctx.moveTo(s.x+s.w,s.y);ctx.lineTo(s.x+s.w,s.y+s.h)}ctx.stroke();
       if(lbl){ctx.save();ctx.font='400 24px Heebo, system-ui, sans-serif';ctx.globalAlpha=a*.75;ctx.textAlign='center';
         if(s.w>s.h)ctx.fillText(L.street,s.x+90,s.y+s.h/2);else{ctx.translate(s.x+s.w/2,s.y+90);ctx.rotate(-Math.PI/2);ctx.fillText(L.street,0,0)}ctx.restore()}});
@@ -115,7 +118,7 @@ function drawMap(ctx,house,lang,opt){
     var hood=r.t.indexOf('hood')===0;ctx.lineWidth=hood?2:1.6;ctx.setLineDash(hood?[10,8]:[]);
     ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.setLineDash([]);
     if(lbl){ctx.globalAlpha=a*.85;ctx.fillText(L.rooms[r.t]||r.t,r.x+r.w/2,r.y+r.h/2);ctx.globalAlpha=a}
-    if(opt.selected===r){ctx.save();ctx.lineWidth=2;ctx.strokeStyle='#E8B04A';ctx.strokeRect(r.x-5,r.y-5,r.w+10,r.h+10);ctx.fillStyle='#E8B04A';ctx.fillRect(r.x+r.w-12,r.y+r.h-12,24,24);ctx.restore()}
+    if(opt.selected===r){ctx.save();ctx.lineWidth=2;ctx.strokeStyle='#E8B04A';ctx.strokeRect(r.x-5,r.y-5,r.w+10,r.h+10);ctx.fillStyle='#E8B04A';ctx.fillRect(r.x+r.w-12,r.y+r.h-12,24,24);ctx.beginPath();ctx.arc(r.x+r.w,r.y,26,0,7);ctx.fill();ctx.strokeStyle='#131718';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(r.x+r.w-10,r.y-10);ctx.lineTo(r.x+r.w+10,r.y+10);ctx.moveTo(r.x+r.w+10,r.y-10);ctx.lineTo(r.x+r.w-10,r.y+10);ctx.stroke();ctx.restore()}
   });
   ctx.restore();
 }
@@ -168,7 +171,7 @@ function placeOfPoint(house,p){
   if(isV2(house)){
     var inHome=p[0]>=HOME.x&&p[0]<=HOME.x+HOME.w&&p[1]>=HOME.y&&p[1]<=HOME.y+HOME.h;
     if(inHome)return {zone:'home',room:best||''};
-    var st=(house.streets||[]).some(function(k){var s=STREETS[k];return s&&p[0]>=s.x&&p[0]<=s.x+s.w&&p[1]>=s.y&&p[1]<=s.y+s.h});
+    var st=(house.streets||[]).some(function(k){var s=streetRect(house,k);return s&&p[0]>=s.x&&p[0]<=s.x+s.w&&p[1]>=s.y&&p[1]<=s.y+s.h});
     return {zone:st?'street':'hood',room:best||''};
   }
   var hood=(house.rooms||[]).some(function(r){return r.t.indexOf('hood')===0&&p[0]>=r.x&&p[0]<=r.x+r.w&&p[1]>=r.y&&p[1]<=r.y+r.h});
@@ -217,6 +220,6 @@ function xlsx(sheets){
     {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map(function(s,i){return '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>'}).join('')+'</Relationships>'}];
   sheets.forEach(function(s,i){f.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:sx(s.rows)})});return zip(f)}
 
-return {LIGHT:LIGHT,T:T,C:C,HOME:HOME,STREETS:STREETS,FEELINGS:FEELINGS,FC:FC,ROOMS:ROOMS,ROOM_SIZE:ROOM_SIZE,SIZE:SIZE,MAX:MAX,BRUSH:BRUSH,
+return {streetRect:streetRect,SLIM:SLIM,LIGHT:LIGHT,T:T,C:C,HOME:HOME,STREETS:STREETS,FEELINGS:FEELINGS,FC:FC,ROOMS:ROOMS,ROOM_SIZE:ROOM_SIZE,SIZE:SIZE,MAX:MAX,BRUSH:BRUSH,
   render:render,drawMap:drawMap,Live:Live,placeOf:placeOf,count:count,send:send,all:all,remove:remove,xlsx:xlsx,local:function(){return !ENDPOINT}};
 })();

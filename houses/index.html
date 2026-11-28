@@ -99,7 +99,8 @@ input[type=text]{width:100%;font:inherit;font-size:17px;border:1.5px solid var(-
 (function(){
 var H=HOUSES,lang=(navigator.language||'').indexOf('ar')===0?'ar':'en';
 try{var sl=localStorage.getItem('houses.lang');if(sl)lang=sl}catch(e){}
-var house={v:2,id:'h'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),town:'',lang:lang,streets:[],rooms:[],marks:[]};
+var selSt=null;
+var house={v:2,sp:{},id:'h'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),town:'',lang:lang,streets:[],rooms:[],marks:[]};
 var picked=[],cur=null,sel=null,SENT='houses.sent.v1',live=null,done=null;
 function $(id){return document.getElementById(id)}
 function L(){return H.T[lang]}
@@ -137,18 +138,22 @@ function buildTools(){
       var r={t:k,x:Math.round(p[0]),y:Math.round(p[1]),w:s[0],h:s[1]};house.rooms.push(r);sel=r;$('del').disabled=false;drawPlan()};rt.appendChild(b)});
 }
 var cvP=$('cvPlan'),ctxP=cvP.getContext('2d');
-function drawPlan(){ctxP.setTransform(1,0,0,1,0,0);ctxP.fillStyle=H.C.bg;ctxP.fillRect(0,0,1000,1000);H.drawMap(ctxP,house,lang,{selected:sel})}
+function drawPlan(){ctxP.setTransform(1,0,0,1,0,0);ctxP.fillStyle=H.C.bg;ctxP.fillRect(0,0,1000,1000);H.drawMap(ctxP,house,lang,{selected:sel,selStreet:selSt})}
 function pos(cv,e){var r=cv.getBoundingClientRect();return [Math.round((e.clientX-r.left)/r.width*1000),Math.round((e.clientY-r.top)/r.height*1000)]}
 var drag=null;
 cvP.addEventListener('pointerdown',function(e){var p=pos(cvP,e);drag=null;
+  if(sel&&Math.hypot(p[0]-(sel.x+sel.w),p[1]-sel.y)<40){var gone=sel;house.rooms=house.rooms.filter(function(r){return r!==gone});sel=null;$('del').disabled=true;drawPlan();return}
   for(var i=house.rooms.length-1;i>=0;i--){var r=house.rooms[i];
     if(r===sel&&Math.abs(p[0]-(r.x+r.w))<34&&Math.abs(p[1]-(r.y+r.h))<34){drag={r:r,mode:'size',p:p,o:[r.w,r.h]};break}
     if(p[0]>=r.x&&p[0]<=r.x+r.w&&p[1]>=r.y&&p[1]<=r.y+r.h){drag={r:r,mode:'move',p:p,o:[r.x,r.y]};break}}
-  sel=drag?drag.r:null;$('del').disabled=!sel;if(drag)cvP.setPointerCapture(e.pointerId);drawPlan()});
+  if(!drag){for(var j=house.streets.length-1;j>=0;j--){var k=house.streets[j],sr=H.streetRect(house,k),hz=k==='st_n'||k==='st_s';
+    if(hz?(p[1]>=sr.y-18&&p[1]<=sr.y+sr.h+18):(p[0]>=sr.x-18&&p[0]<=sr.x+sr.w+18)){drag={st:k,p:p,o:hz?sr.y:sr.x};break}}}
+  sel=drag&&drag.r?drag.r:null;selSt=drag&&drag.st?drag.st:null;$('del').disabled=!sel;if(drag)cvP.setPointerCapture(e.pointerId);drawPlan()});
 cvP.addEventListener('pointermove',function(e){if(!drag)return;var p=pos(cvP,e),dx=p[0]-drag.p[0],dy=p[1]-drag.p[1],r=drag.r;
+  if(drag.st){var k=drag.st,lim=H.SLIM[k],v=drag.o+((k==='st_n'||k==='st_s')?dy:dx);house.sp[k]=Math.round(Math.max(lim[0],Math.min(lim[1],v)));drawPlan();return}
   if(drag.mode==='move'){r.x=Math.max(-r.w+30,Math.min(970,drag.o[0]+dx));r.y=Math.max(-r.h+30,Math.min(970,drag.o[1]+dy))}
   else{r.w=Math.max(30,drag.o[0]+dx);r.h=Math.max(16,drag.o[1]+dy)}drawPlan()});
-cvP.addEventListener('pointerup',function(){drag=null});
+cvP.addEventListener('pointerup',function(){drag=null;if(selSt){selSt=null;drawPlan()}});
 $('del').onclick=function(){if(!sel)return;house.rooms=house.rooms.filter(function(r){return r!==sel});sel=null;$('del').disabled=true;drawPlan()};
 $('b2').onclick=function(){go(1)};
 $('n2').onclick=function(){sel=null;go(3)};
